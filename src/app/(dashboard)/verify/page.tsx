@@ -5,24 +5,23 @@ import Link from 'next/link'
 import {
   ShieldCheck,
   CheckCircle2,
-  AlertCircle,
-  Phone,
   Mail,
-  FileText,
-  Upload,
   ArrowRight,
   Clock,
-  XCircle,
   Sparkles,
   Lock,
+  Compass,
+  Heart,
+  Send,
+  Loader2,
 } from 'lucide-react'
 import EditorialNavigation from '@/components/EditorialNavigation'
 import {
   getVerificationStatusAction,
-  submitIdentityVerificationAction,
-  verifyPhoneOtpAction,
+  sendEmailOtpAction,
+  verifyEmailOtpAction,
 } from './actions'
-import type { VerificationType, VerificationProfileState } from '@/lib/verification'
+import type { VerificationProfileState } from '@/lib/verification'
 
 export default function VerificationCenterPage() {
   const [state, setState] = useState<VerificationProfileState | null>(null)
@@ -30,17 +29,11 @@ export default function VerificationCenterPage() {
   const [loading, setLoading] = useState<boolean>(true)
   const [statusMsg, setStatusMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
 
-  // Phone verification state
-  const [phoneInput, setPhoneInput] = useState<string>('')
+  // Email OTP verification states
   const [otpSent, setOtpSent] = useState<boolean>(false)
   const [otpInput, setOtpInput] = useState<string>('')
-  const [isVerifyingPhone, setIsVerifyingPhone] = useState<boolean>(false)
-
-  // Document verification state
-  const [docType, setDocType] = useState<VerificationType>('aadhaar')
-  const [docUrl, setDocUrl] = useState<string>('')
-  const [maskedId, setMaskedId] = useState<string>('')
-  const [isSubmittingDoc, setIsSubmittingDoc] = useState<boolean>(false)
+  const [isSendingOtp, setIsSendingOtp] = useState<boolean>(false)
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState<boolean>(false)
 
   useEffect(() => {
     async function loadStatus() {
@@ -55,46 +48,45 @@ export default function VerificationCenterPage() {
     loadStatus()
   }, [])
 
-  const handleSendOtp = (e: React.FormEvent) => {
+  const handleSendEmailOtp = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!phoneInput || phoneInput.length < 10) {
-      setStatusMsg({ text: 'Please enter a valid 10-digit Indian phone number.', type: 'error' })
-      return
+    setIsSendingOtp(true)
+    setStatusMsg(null)
+
+    const res = await sendEmailOtpAction()
+    setIsSendingOtp(false)
+
+    if (res.success) {
+      setOtpSent(true)
+      setStatusMsg({
+        text: res.message || `Verification code sent to ${userEmail}. Check your inbox!`,
+        type: 'success',
+      })
+    } else {
+      setStatusMsg({ text: res.message || 'Failed to dispatch code.', type: 'error' })
     }
-    setOtpSent(true)
-    setStatusMsg({ text: 'SMS OTP sent to ' + phoneInput + '. (Use test code: 1234)', type: 'success' })
   }
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
+  const handleVerifyEmailOtp = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsVerifyingPhone(true)
-    const res = await verifyPhoneOtpAction(phoneInput, otpInput)
-    setIsVerifyingPhone(false)
+    if (!otpInput.trim()) {
+      setStatusMsg({ text: 'Please enter the 6-digit code received on your email.', type: 'error' })
+      return
+    }
+
+    setIsVerifyingOtp(true)
+    setStatusMsg(null)
+
+    const res = await verifyEmailOtpAction(otpInput)
+    setIsVerifyingOtp(false)
+
     if (res.success) {
-      setStatusMsg({ text: 'Phone verified successfully!', type: 'success' })
+      setStatusMsg({ text: 'Email verified! You are now a Verified YAARO Member.', type: 'success' })
       setOtpSent(false)
       const fresh = await getVerificationStatusAction()
       if (fresh.state) setState(fresh.state)
     } else {
-      setStatusMsg({ text: res.message, type: 'error' })
-    }
-  }
-
-  const handleSubmitDocument = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!docUrl.trim()) {
-      setStatusMsg({ text: 'Please provide a document image link or upload preview URL.', type: 'error' })
-      return
-    }
-    setIsSubmittingDoc(true)
-    const res = await submitIdentityVerificationAction(docType, docUrl, maskedId)
-    setIsSubmittingDoc(false)
-    if (res.success) {
-      setStatusMsg({ text: res.message, type: 'success' })
-      const fresh = await getVerificationStatusAction()
-      if (fresh.state) setState(fresh.state)
-    } else {
-      setStatusMsg({ text: res.message, type: 'error' })
+      setStatusMsg({ text: res.message || 'Invalid verification code.', type: 'error' })
     }
   }
 
@@ -108,16 +100,16 @@ export default function VerificationCenterPage() {
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-tomato font-bold">
-                <span>VOL. 07 // TRUST &amp; COMPLIANCE DESK</span>
+                <span>VOL. 07 // TRUST &amp; SAFETY DESK</span>
                 <span>•</span>
-                <span className="text-deepgreen/70">Anti-Broker &amp; Identity Integrity Standard</span>
+                <span className="text-deepgreen/70">Anti-Broker &amp; Flatmate Integrity Standard</span>
               </div>
               <h1 className="text-3xl sm:text-5xl font-black uppercase tracking-tight text-deepgreen mt-0.5">
                 VERIFICATION CENTER
               </h1>
               <p className="font-serif italic text-sm text-deepgreen/80 mt-1 max-w-2xl">
-                YAARO protects the collective by eliminating disguised brokers, deposit scammers, and phantom listings.
-                Badges are earned exclusively through authentic review.
+                YAARO protects our shared-living collective from phantom listings, deposit fraud, and commercial brokers.
+                Verification is completely free and completed in under 60 seconds via email confirmation.
               </p>
             </div>
 
@@ -128,15 +120,10 @@ export default function VerificationCenterPage() {
                   <CheckCircle2 className="w-4 h-4 text-emerald-700" />
                   <span>✓ VERIFIED YAARO MEMBER</span>
                 </div>
-              ) : state?.overallStatus === 'pending' ? (
-                <div className="px-4 py-2 bg-butter border-2 border-deepgreen text-deepgreen font-mono text-xs font-bold flex items-center gap-2 shadow-[2px_2px_0px_#263F32]">
-                  <Clock className="w-4 h-4 text-tomato animate-spin" />
-                  <span>⏳ REVIEW IN PROGRESS</span>
-                </div>
               ) : (
-                <div className="px-4 py-2 bg-cream-light border-2 border-deepgreen text-deepgreen/80 font-mono text-xs font-bold flex items-center gap-2 shadow-[2px_2px_0px_#263F32]">
+                <div className="px-4 py-2 bg-butter border-2 border-deepgreen text-deepgreen font-mono text-xs font-bold flex items-center gap-2 shadow-[2px_2px_0px_#263F32]">
                   <Lock className="w-4 h-4 text-tomato" />
-                  <span>STANDARD (UNVERIFIED)</span>
+                  <span>1-MIN EMAIL VERIFICATION PENDING</span>
                 </div>
               )}
             </div>
@@ -153,22 +140,30 @@ export default function VerificationCenterPage() {
             }`}
           >
             <span>{statusMsg.text}</span>
-            <button onClick={() => setStatusMsg(null)} className="underline">Dismiss</button>
+            <button onClick={() => setStatusMsg(null)} className="underline ml-4">
+              Dismiss
+            </button>
           </div>
         )}
 
         {/* Verification Overview Grid (3 Steps) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Step 1: Email Verification */}
+          {/* Step 1: Free Email OTP Verification */}
           <div className="border-2 border-deepgreen bg-cream-light p-5 space-y-4 shadow-[4px_4px_0px_#263F32] flex flex-col justify-between">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-[10px] font-bold text-tomato uppercase tracking-widest">
                   STAGE 01
                 </span>
-                <span className="px-2 py-0.5 font-mono text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                  CONFIRMED
-                </span>
+                {state?.badgeEligible ? (
+                  <span className="px-2 py-0.5 font-mono text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    VERIFIED
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 font-mono text-[9px] font-bold bg-tomato/10 text-tomato border border-tomato/30">
+                    READY TO VERIFY
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 <div className="p-2 border border-deepgreen bg-cream text-deepgreen">
@@ -176,279 +171,257 @@ export default function VerificationCenterPage() {
                 </div>
                 <div>
                   <h4 className="font-serif font-black uppercase text-sm text-deepgreen">
-                    Email Authentication
+                    Email Identity Anchor
                   </h4>
                   <p className="font-mono text-xs text-deepgreen/60 truncate max-w-[200px]">
-                    {userEmail || 'Active session'}
+                    {userEmail || 'Active account'}
                   </p>
                 </div>
               </div>
               <p className="font-serif italic text-xs text-deepgreen/80">
-                Primary contact route for match confirmations and rental agreements.
+                100% Free OTP verification code sent directly to your inbox with zero SMS hurdles.
               </p>
             </div>
-            <div className="pt-3 border-t border-deepgreen/20 font-mono text-[11px] text-emerald-800 font-bold flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Identity Anchor Verified</span>
-            </div>
+
+            {state?.badgeEligible ? (
+              <div className="pt-3 border-t border-deepgreen/20 font-mono text-[11px] text-emerald-800 font-bold flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>Email Anchor Confirmed</span>
+              </div>
+            ) : (
+              <div className="pt-3 border-t border-deepgreen/20">
+                <a
+                  href="#email-otp-box"
+                  className="w-full py-2 bg-tomato hover:bg-tomato-dark text-cream-light font-mono text-xs font-bold uppercase text-center block shadow-[2px_2px_0px_#263F32] transition-all"
+                >
+                  Verify Email Now ↓
+                </a>
+              </div>
+            )}
           </div>
 
-          {/* Step 2: Phone Number Verification */}
+          {/* Step 2: Living Rhythm Profile */}
           <div className="border-2 border-deepgreen bg-cream-light p-5 space-y-4 shadow-[4px_4px_0px_#263F32] flex flex-col justify-between">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-[10px] font-bold text-tomato uppercase tracking-widest">
                   STAGE 02
                 </span>
-                {state?.isPhoneVerified ? (
+                {state?.isProfileComplete ? (
                   <span className="px-2 py-0.5 font-mono text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                    VERIFIED
+                    COMPLETE
                   </span>
                 ) : (
-                  <span className="px-2 py-0.5 font-mono text-[9px] font-bold bg-tomato/10 text-tomato border border-tomato/30">
-                    ACTION NEEDED
+                  <span className="px-2 py-0.5 font-mono text-[9px] font-bold bg-butter text-deepgreen border border-deepgreen/40">
+                    IN PROGRESS
                   </span>
                 )}
               </div>
               <div className="flex items-center gap-3">
                 <div className="p-2 border border-deepgreen bg-cream text-deepgreen">
-                  <Phone className="w-5 h-5 text-tomato" />
+                  <Compass className="w-5 h-5 text-tomato" />
                 </div>
                 <div>
                   <h4 className="font-serif font-black uppercase text-sm text-deepgreen">
-                    Phone Verification
+                    Living Profile
                   </h4>
                   <p className="font-mono text-xs text-deepgreen/60">
-                    {state?.isPhoneVerified ? 'Confirmed via SMS OTP' : 'Anti-Spam OTP Protocol'}
+                    City, bio &amp; flatmate habits
                   </p>
                 </div>
               </div>
               <p className="font-serif italic text-xs text-deepgreen/80">
-                Required before initiating chat dialogues or submitting room listing inquiries.
+                Helps flatmates understand your kitchen rules, sleeping hours, and weekend chai habits.
               </p>
             </div>
 
-            {state?.isPhoneVerified ? (
-              <div className="pt-3 border-t border-deepgreen/20 font-mono text-[11px] text-emerald-800 font-bold flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Mobile Link Confirmed</span>
-              </div>
-            ) : (
-              <div className="pt-3 border-t border-deepgreen/20 space-y-2">
-                {!otpSent ? (
-                  <form onSubmit={handleSendOtp} className="space-y-2">
-                    <input
-                      type="tel"
-                      placeholder="+91 98765 43210"
-                      value={phoneInput}
-                      onChange={(e) => setPhoneInput(e.target.value)}
-                      className="w-full px-3 py-1.5 border border-deepgreen bg-cream font-mono text-xs text-deepgreen placeholder:text-deepgreen/40 focus:outline-none"
-                    />
-                    <button
-                      type="submit"
-                      className="w-full py-1.5 bg-deepgreen text-cream font-mono text-xs font-bold uppercase hover:bg-tomato transition-colors"
-                    >
-                      Send Verification OTP
-                    </button>
-                  </form>
-                ) : (
-                  <form onSubmit={handleVerifyOtp} className="space-y-2">
-                    <input
-                      type="text"
-                      placeholder="Enter 4-digit OTP (e.g. 1234)"
-                      value={otpInput}
-                      onChange={(e) => setOtpInput(e.target.value)}
-                      className="w-full px-3 py-1.5 border border-deepgreen bg-cream font-mono text-xs text-deepgreen placeholder:text-deepgreen/40 focus:outline-none"
-                    />
-                    <button
-                      type="submit"
-                      disabled={isVerifyingPhone}
-                      className="w-full py-1.5 bg-tomato text-cream font-mono text-xs font-bold uppercase hover:bg-tomato-dark transition-colors disabled:opacity-50"
-                    >
-                      {isVerifyingPhone ? 'Verifying...' : 'Confirm OTP'}
-                    </button>
-                  </form>
-                )}
-              </div>
-            )}
+            <div className="pt-3 border-t border-deepgreen/20">
+              <Link
+                href="/profile/edit"
+                className="font-mono text-xs text-deepgreen hover:text-tomato underline font-bold uppercase block text-center"
+              >
+                Update Living Bio →
+              </Link>
+            </div>
           </div>
 
-          {/* Step 3: Identity Document Verification */}
+          {/* Step 3: Chemistry Quiz */}
           <div className="border-2 border-deepgreen bg-cream-light p-5 space-y-4 shadow-[4px_4px_0px_#263F32] flex flex-col justify-between">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-[10px] font-bold text-tomato uppercase tracking-widest">
                   STAGE 03
                 </span>
-                {state?.isIdentityVerified ? (
-                  <span className="px-2 py-0.5 font-mono text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                    APPROVED
-                  </span>
-                ) : state?.overallStatus === 'pending' ? (
-                  <span className="px-2 py-0.5 font-mono text-[9px] font-bold bg-butter text-deepgreen border border-deepgreen/40">
-                    UNDER REVIEW
-                  </span>
-                ) : state?.overallStatus === 'rejected' ? (
-                  <span className="px-2 py-0.5 font-mono text-[9px] font-bold bg-tomato text-cream">
-                    REJECTED
-                  </span>
-                ) : (
-                  <span className="px-2 py-0.5 font-mono text-[9px] font-bold bg-deepgreen/10 text-deepgreen/70">
-                    OPTIONAL BADGE
-                  </span>
-                )}
+                <span className="px-2 py-0.5 font-mono text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  RECOMMENDED
+                </span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="p-2 border border-deepgreen bg-cream text-deepgreen">
-                  <ShieldCheck className="w-5 h-5 text-tomato" />
+                  <Heart className="w-5 h-5 text-tomato" />
                 </div>
                 <div>
                   <h4 className="font-serif font-black uppercase text-sm text-deepgreen">
-                    Identity Document
+                    Chemistry Quiz
                   </h4>
                   <p className="font-mono text-xs text-deepgreen/60">
-                    Aadhaar / Passport / College ID / Work Badge
+                    10 lifestyle balance questions
                   </p>
                 </div>
               </div>
               <p className="font-serif italic text-xs text-deepgreen/80">
-                Grants the official Verified YAARO badge, unlocks priority discovery ranking, and tenant fast-track.
+                Powers your compatibility percentage so you only live with people you genuinely vibe with.
               </p>
             </div>
 
             <div className="pt-3 border-t border-deepgreen/20">
-              {state?.isIdentityVerified ? (
-                <div className="font-mono text-[11px] text-emerald-800 font-bold flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>Document Authenticated</span>
-                </div>
-              ) : state?.overallStatus === 'pending' ? (
-                <div className="font-mono text-[11px] text-deepgreen font-bold flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-tomato" />
-                  <span>Submitted {state?.submittedAt ? new Date(state.submittedAt).toLocaleDateString('en-IN') : 'recently'}</span>
-                </div>
-              ) : (
-                <a
-                  href="#document-upload"
-                  className="font-mono text-xs text-tomato underline font-bold uppercase block text-center"
-                >
-                  Submit Document Below ↓
-                </a>
-              )}
+              <Link
+                href="/quiz"
+                className="font-mono text-xs text-tomato hover:text-tomato-dark underline font-bold uppercase block text-center"
+              >
+                Play Chemistry Quiz →
+              </Link>
             </div>
           </div>
         </div>
 
-        {/* Identity Document Submission Form */}
-        {!state?.isIdentityVerified && (
-          <div id="document-upload" className="border-2 border-deepgreen bg-cream-light p-6 sm:p-8 shadow-[6px_6px_0px_#263F32] space-y-6">
+        {/* Free Email Verification Action Box */}
+        {!state?.badgeEligible ? (
+          <div id="email-otp-box" className="border-2 border-deepgreen bg-cream-light p-6 sm:p-8 shadow-[6px_6px_0px_#263F32] space-y-6">
             <div className="border-b border-deepgreen/20 pb-4">
               <span className="font-mono text-[10px] uppercase tracking-widest text-tomato font-bold block mb-1">
-                COMPLIANCE SUBMISSION PORTAL
+                INSTANT FREE VERIFICATION
               </span>
               <h3 className="font-serif font-black uppercase text-2xl text-deepgreen">
-                Submit Government or Institutional Credential
+                Verify Your Email with a 6-Digit Code
               </h3>
               <p className="font-serif italic text-xs text-deepgreen/70 mt-1">
-                Your documents are encrypted with AES-256 and reviewed solely by verified human moderators.
-                Numbers are masked and never shared with other roommates or public profiles.
+                Zero document uploads, no government ID friction, and no carrier SMS fees. We send a secure one-time passcode directly to your inbox.
               </p>
             </div>
 
-            {state?.rejectionReason && (
-              <div className="p-4 bg-tomato/10 border-2 border-tomato text-deepgreen space-y-1">
-                <span className="font-mono text-xs uppercase font-bold text-tomato block">
-                  Previous Submission Note from Moderator:
-                </span>
-                <p className="font-serif text-xs text-deepgreen/90">{state.rejectionReason}</p>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmitDocument} className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Document Type Selector */}
-                <div className="space-y-1.5">
-                  <label className="font-mono text-xs uppercase font-bold text-deepgreen block">
-                    1. Credential Category
-                  </label>
-                  <select
-                    value={docType}
-                    onChange={(e) => setDocType(e.target.value as VerificationType)}
-                    className="w-full px-3 py-2 border-2 border-deepgreen bg-cream font-serif text-sm text-deepgreen focus:outline-none"
-                  >
-                    <option value="aadhaar">Government ID (Aadhaar / Voter ID / Passport)</option>
-                    <option value="college_id">University / College Student ID Card</option>
-                    <option value="work_email">Corporate Work ID / Official Employment Letter</option>
-                    <option value="social_linkedin">Verified Professional Profile (LinkedIn)</option>
-                  </select>
-                </div>
-
-                {/* Masked ID Reference */}
-                <div className="space-y-1.5">
-                  <label className="font-mono text-xs uppercase font-bold text-deepgreen block">
-                    2. Masked Reference (Last 4 Digits / Roll No.)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. •••• 9821 or EMP-4029"
-                    value={maskedId}
-                    onChange={(e) => setMaskedId(e.target.value)}
-                    className="w-full px-3 py-2 border-2 border-deepgreen bg-cream font-mono text-xs text-deepgreen focus:outline-none placeholder:text-deepgreen/40"
-                  />
-                </div>
+            <div className="max-w-md space-y-4">
+              <div className="p-3 bg-butter/30 border border-deepgreen font-mono text-xs space-y-1">
+                <span className="text-[10px] text-deepgreen/60 uppercase block">Registered Email Address:</span>
+                <span className="font-bold text-sm text-deepgreen">{userEmail || 'Your Account Email'}</span>
               </div>
 
-              {/* Document Image Link or Upload Preview */}
-              <div className="space-y-1.5">
-                <label className="font-mono text-xs uppercase font-bold text-deepgreen block">
-                  3. Document Image Link or Secure Storage URL
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    placeholder="https://images.unsplash.com/... or uploaded document link"
-                    value={docUrl}
-                    onChange={(e) => setDocUrl(e.target.value)}
-                    className="flex-1 px-3 py-2 border-2 border-deepgreen bg-cream font-mono text-xs text-deepgreen focus:outline-none placeholder:text-deepgreen/40"
-                  />
+              {!otpSent ? (
+                <form onSubmit={handleSendEmailOtp} className="space-y-3">
                   <button
-                    type="button"
-                    onClick={() =>
-                      setDocUrl(
-                        'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=800&q=80'
-                      )
-                    }
-                    className="px-3 py-2 border-2 border-deepgreen bg-butter text-deepgreen font-mono text-xs font-bold hover:bg-yellow-300 transition-colors"
+                    type="submit"
+                    disabled={isSendingOtp}
+                    className="w-full py-3 bg-tomato hover:bg-tomato-dark text-cream-light font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-[3px_3px_0px_#263F32] transition-all hover:translate-x-[1px] hover:translate-y-[1px] disabled:opacity-50"
                   >
-                    Sample Preview
+                    {isSendingOtp ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Sending Code to Inbox...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        <span>Send 6-Digit Code to My Email</span>
+                      </>
+                    )}
                   </button>
-                </div>
-                <span className="font-mono text-[10px] text-deepgreen/60 block">
-                  PNG, JPG, or PDF. Ensure full legal name and photo are legible. Sensitive numbers can be masked.
-                </span>
-              </div>
+                  <p className="font-mono text-[10px] text-deepgreen/60 text-center">
+                    Check your inbox or spam folder. Dispatches in 2–3 seconds.
+                  </p>
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyEmailOtp} className="space-y-4 pt-2">
+                  <div className="space-y-1.5">
+                    <label className="font-mono text-xs uppercase font-bold text-deepgreen block">
+                      Enter 6-Digit Verification Code
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 123456"
+                      value={otpInput}
+                      onChange={(e) => setOtpInput(e.target.value)}
+                      maxLength={8}
+                      className="w-full px-4 py-2.5 border-2 border-deepgreen bg-cream font-mono text-lg tracking-widest text-deepgreen placeholder:text-deepgreen/30 focus:outline-none"
+                    />
+                  </div>
 
-              <button
-                type="submit"
-                disabled={isSubmittingDoc}
-                className="w-full sm:w-auto px-8 py-3 bg-tomato hover:bg-tomato-dark text-cream font-serif font-bold uppercase tracking-wider text-xs transition-colors shadow-[3px_3px_0px_#263F32] disabled:opacity-50"
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="submit"
+                      disabled={isVerifyingOtp}
+                      className="flex-1 py-3 bg-deepgreen hover:bg-tomato text-cream font-mono text-xs font-bold uppercase tracking-wider shadow-[3px_3px_0px_#E95D43] transition-all hover:translate-x-[1px] hover:translate-y-[1px] disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {isVerifyingOtp ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Validating Code...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>Verify &amp; Claim Badge</span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSendEmailOtp}
+                      disabled={isSendingOtp}
+                      className="py-3 px-4 border-2 border-deepgreen bg-cream hover:bg-butter/50 font-mono text-xs uppercase text-deepgreen font-bold"
+                    >
+                      Resend
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="border-2 border-deepgreen bg-emerald-50/70 p-6 sm:p-8 shadow-[6px_6px_0px_#263F32] space-y-4">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-emerald-600 text-white border-2 border-deepgreen shadow-[2px_2px_0px_#263F32]">
+                <ShieldCheck className="w-8 h-8" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[10px] uppercase font-bold text-emerald-800 bg-emerald-200/80 px-2 py-0.5 border border-emerald-400">
+                    TRUST STATUS: FULLY VERIFIED
+                  </span>
+                </div>
+                <h3 className="font-serif font-black uppercase text-2xl text-deepgreen">
+                  Your Account Holds Verified Member Standing
+                </h3>
+                <p className="font-serif italic text-xs text-deepgreen/80 max-w-xl">
+                  You now carry the verified green checkmark across Roommate Discovery, direct chat messages, and room listings.
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-emerald-200 flex flex-wrap gap-4">
+              <Link
+                href="/discover"
+                className="px-5 py-2.5 bg-deepgreen text-cream font-mono text-xs font-bold uppercase tracking-wider shadow-[2px_2px_0px_#E95D43] hover:bg-tomato transition-colors"
               >
-                {isSubmittingDoc ? 'Submitting to Compliance Desk...' : 'Submit Credential for Review ↗'}
-              </button>
-            </form>
+                Browse Roommates →
+              </Link>
+              <Link
+                href="/rooms"
+                className="px-5 py-2.5 bg-cream border border-deepgreen text-deepgreen font-mono text-xs font-bold uppercase tracking-wider hover:bg-butter transition-colors"
+              >
+                Explore Rooms →
+              </Link>
+            </div>
           </div>
         )}
 
-        {/* Verification Guarantee & Standards */}
-        <div className="border-2 border-deepgreen bg-cream p-6 shadow-[4px_4px_0px_#263F32] space-y-3">
-          <div className="flex items-center gap-2 font-mono text-xs uppercase font-bold text-deepgreen">
-            <ShieldCheck className="w-4 h-4 text-tomato" />
-            <span>THE YAARO VERIFICATION PLEDGE</span>
+        {/* Anti-Broker Community Principles */}
+        <div className="border-t-2 border-deepgreen pt-6 text-xs font-mono text-deepgreen/70 space-y-2">
+          <div className="flex items-center gap-2 font-bold uppercase tracking-wider text-deepgreen">
+            <Sparkles className="w-3.5 h-3.5 text-tomato" />
+            <span>YAARO Collective Living Standard</span>
           </div>
-          <p className="font-serif text-xs text-deepgreen/80 leading-relaxed">
-            In accordance with YAARO architectural policy, verified member badges are mathematically grounded in genuine
-            compliance records. Profiles without confirmed telephone credentials and human-audited identity documents
-            are restricted from claiming verified status across our matching feed and room directory.
+          <p className="font-serif italic text-sm text-deepgreen/80">
+            “No brokerage, no fake listings, no aggressive landlords. YAARO connects real young adults who share living values, cleanliness standards, and mutual respect.”
           </p>
         </div>
       </main>

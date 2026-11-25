@@ -9,7 +9,7 @@ import GoogleAuthButton from '@/components/GoogleAuthButton'
 
 export default function LoginPage() {
   const router = useRouter()
-  const [authMethod, setAuthMethod] = useState<'phone' | 'email'>('phone')
+  const [authMethod, setAuthMethod] = useState<'email' | 'phone'>('email')
 
   // Phone OTP States
   const [phone, setPhone] = useState('')
@@ -139,21 +139,6 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => {
-                setAuthMethod('phone')
-                setErrorMessage(null)
-              }}
-              className={`py-2 px-3 border-2 transition-all flex items-center justify-center gap-2 font-bold ${
-                authMethod === 'phone'
-                  ? 'border-deepgreen bg-deepgreen text-cream shadow-[2px_2px_0px_#E95D43]'
-                  : 'border-deepgreen/40 bg-cream text-deepgreen/80 hover:border-deepgreen'
-              }`}
-            >
-              <Phone className="h-3.5 w-3.5" />
-              <span>PHONE OTP</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
                 setAuthMethod('email')
                 setErrorMessage(null)
               }}
@@ -164,7 +149,22 @@ export default function LoginPage() {
               }`}
             >
               <Mail className="h-3.5 w-3.5" />
-              <span>EMAIL PASS</span>
+              <span>EMAIL SIGN IN</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMethod('phone')
+                setErrorMessage(null)
+              }}
+              className={`py-2 px-3 border-2 transition-all flex items-center justify-center gap-2 font-bold ${
+                authMethod === 'phone'
+                  ? 'border-deepgreen bg-deepgreen text-cream shadow-[2px_2px_0px_#E95D43]'
+                  : 'border-deepgreen/40 bg-cream text-deepgreen/80 hover:border-deepgreen'
+              }`}
+            >
+              <Phone className="h-3.5 w-3.5" />
+              <span>PHONE (DEMO)</span>
             </button>
           </div>
 

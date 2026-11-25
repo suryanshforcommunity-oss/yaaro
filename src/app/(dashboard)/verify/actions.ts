@@ -3,8 +3,9 @@
 import { createClient } from '@/lib/supabase/server'
 import {
   getUserVerificationState,
+  sendEmailVerificationOtp,
+  verifyUserEmailOtp,
   submitVerificationDocument,
-  verifyPhoneNumber,
   type VerificationType,
 } from '@/lib/verification'
 
@@ -20,6 +21,34 @@ export async function getVerificationStatusAction() {
     return { success: true, state, userEmail: user.email }
   } catch (err: any) {
     return { success: false, state: null, message: err.message }
+  }
+}
+
+export async function sendEmailOtpAction() {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || !user.email) {
+      return { success: false, message: 'No registered email found. Please sign in.' }
+    }
+
+    return await sendEmailVerificationOtp(user.email)
+  } catch (err: any) {
+    return { success: false, message: err.message }
+  }
+}
+
+export async function verifyEmailOtpAction(otpCode: string) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || !user.email) {
+      return { success: false, message: 'Unauthorized. Please sign in.' }
+    }
+
+    return await verifyUserEmailOtp(user.id, user.email, otpCode)
+  } catch (err: any) {
+    return { success: false, message: err.message }
   }
 }
 
@@ -45,15 +74,5 @@ export async function submitIdentityVerificationAction(
 }
 
 export async function verifyPhoneOtpAction(phoneNumber: string, otpCode: string) {
-  try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return { success: false, message: 'Unauthorized' }
-    }
-
-    return await verifyPhoneNumber(user.id, phoneNumber, otpCode)
-  } catch (err: any) {
-    return { success: false, message: err.message }
-  }
+  return { success: true, message: 'Phone verification is optional and archived.' }
 }

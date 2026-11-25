@@ -39,7 +39,7 @@ export default function EditorialNavigation({
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!user)
   const [userName, setUserName] = useState<string>(
     cachedProfile?.userName ||
-      (user?.name && !user.name.includes('Rhea') ? user.name : 'My Dossier')
+    (user?.name && !user.name.includes('Rhea') ? user.name : 'My Dossier')
   )
   const [userCity, setUserCity] = useState<string>(cachedProfile?.city || city || 'Pune')
   const [unreadNotifications, setUnreadNotifications] = useState<number>(cachedProfile?.unread || 0)
@@ -156,11 +156,10 @@ export default function EditorialNavigation({
                   href={item.href}
                   prefetch={true}
                   onClick={() => handleNavClick(item.href)}
-                  className={`transition-colors py-1 ${
-                    isActive
-                      ? 'text-tomato font-black underline decoration-tomato decoration-2 underline-offset-8'
-                      : 'text-deepgreen hover:text-tomato'
-                  }`}
+                  className={`transition-colors py-1 ${isActive
+                    ? 'text-tomato font-black underline decoration-tomato decoration-2 underline-offset-8'
+                    : 'text-deepgreen hover:text-tomato'
+                    }`}
                 >
                   {item.label}
                 </Link>
@@ -257,11 +256,10 @@ export default function EditorialNavigation({
                     href={item.href}
                     prefetch={true}
                     onClick={() => handleNavClick(item.href)}
-                    className={`p-3 border-2 font-bold text-xs uppercase flex items-center justify-between transition-all ${
-                      isActive
-                        ? 'border-tomato bg-tomato/10 text-tomato shadow-[2px_2px_0px_#E95D43]'
-                        : 'border-deepgreen/30 bg-cream-light text-deepgreen hover:border-deepgreen'
-                    }`}
+                    className={`p-3 border-2 font-bold text-xs uppercase flex items-center justify-between transition-all ${isActive
+                      ? 'border-tomato bg-tomato/10 text-tomato shadow-[2px_2px_0px_#E95D43]'
+                      : 'border-deepgreen/30 bg-cream-light text-deepgreen hover:border-deepgreen'
+                      }`}
                   >
                     <div className="flex items-center gap-2">
                       <Icon className="h-4 w-4 text-tomato" />
@@ -313,14 +311,12 @@ export default function EditorialNavigation({
                 href={item.href}
                 prefetch={true}
                 onClick={() => handleNavClick(item.href)}
-                className={`flex flex-col items-center justify-center py-1 transition-colors ${
-                  isActive ? 'text-tomato font-black' : 'text-deepgreen/70 hover:text-deepgreen'
-                }`}
+                className={`flex flex-col items-center justify-center py-1 transition-colors ${isActive ? 'text-tomato font-black' : 'text-deepgreen/70 hover:text-deepgreen'
+                  }`}
               >
                 <div
-                  className={`p-1.5 rounded-sm mb-0.5 ${
-                    isActive ? 'bg-tomato text-cream shadow-[1px_1px_0px_#263F32]' : ''
-                  }`}
+                  className={`p-1.5 rounded-sm mb-0.5 ${isActive ? 'bg-tomato text-cream shadow-[1px_1px_0px_#263F32]' : ''
+                    }`}
                 >
                   <Icon className="h-3.5 w-3.5" />
                 </div>
