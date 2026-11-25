@@ -122,6 +122,26 @@ export default function EditorialNavigation({
     setIsMobileMenuOpen(false)
   }
 
+  // Close mobile menu if clicked anywhere on the screen
+  useEffect(() => {
+    if (!isMobileMenuOpen) return
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (!target.closest('[data-mobile-menu-container]') && !target.closest('[data-mobile-menu-toggle]')) {
+        setIsMobileMenuOpen(false)
+      }
+    }
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsMobileMenuOpen(false)
+    }
+    window.addEventListener('click', handleGlobalClick)
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('click', handleGlobalClick)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isMobileMenuOpen])
+
   return (
     <>
       {/* Top Editorial Masthead */}
@@ -213,6 +233,7 @@ export default function EditorialNavigation({
 
             {/* Mobile Menu Toggle Button */}
             <button
+              data-mobile-menu-toggle
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="lg:hidden p-1.5 border-2 border-deepgreen bg-cream hover:bg-butter text-deepgreen shadow-[2px_2px_0px_#263F32] flex items-center justify-center"
               title="Menu"
@@ -232,8 +253,15 @@ export default function EditorialNavigation({
 
       {/* Mobile Slide-Up / Dropdown Navigation Menu */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 bg-deepgreen/40 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="absolute top-0 right-0 left-0 bg-cream border-b-2 border-deepgreen p-5 shadow-[0_8px_20px_rgba(38,63,50,0.15)] font-sans space-y-4">
+        <div
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="lg:hidden fixed inset-0 z-50 bg-deepgreen/40 backdrop-blur-sm animate-in fade-in duration-150"
+        >
+          <div
+            data-mobile-menu-container
+            onClick={(e) => e.stopPropagation()}
+            className="absolute top-0 right-0 left-0 bg-cream border-b-2 border-deepgreen p-5 shadow-[0_8px_20px_rgba(38,63,50,0.15)] font-sans space-y-4"
+          >
             <div className="flex items-center justify-between border-b border-deepgreen/20 pb-3">
               <span className="font-serif font-black uppercase text-sm tracking-wider text-deepgreen">
                 YAARO Directory Menu

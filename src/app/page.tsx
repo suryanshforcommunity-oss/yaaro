@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { Menu, X, ChevronRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 interface RoomItem {
@@ -21,6 +22,7 @@ const TOP_CITIES = ['ALL', 'PUNE', 'MUMBAI', 'NAGPUR', 'BANGALORE', 'HYDERABAD']
 type CityFilter = (typeof TOP_CITIES)[number]
 
 export default function HomePage() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false)
   const [selectedOption, setSelectedOption] = useState<number>(1)
   const [activeCity, setActiveCity] = useState<CityFilter>('ALL')
   const [newsletterEmail, setNewsletterEmail] = useState('')
@@ -29,6 +31,26 @@ export default function HomePage() {
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [liveRooms, setLiveRooms] = useState<RoomItem[]>([])
   const [isLoadingRooms, setIsLoadingRooms] = useState<boolean>(true)
+
+  // Close mobile menu when clicked anywhere on the screen or pressed Escape
+  useEffect(() => {
+    if (!isMobileMenuOpen) return
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      if (!target.closest('[data-landing-menu-container]') && !target.closest('[data-landing-menu-toggle]')) {
+        setIsMobileMenuOpen(false)
+      }
+    }
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsMobileMenuOpen(false)
+    }
+    window.addEventListener('click', handleGlobalClick)
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('click', handleGlobalClick)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isMobileMenuOpen])
 
   useEffect(() => {
     async function loadData() {
@@ -124,11 +146,15 @@ export default function HomePage() {
       {/* =========================================================
           SECTION 1: EXPRESSIVE EDITORIAL HEADER
       ========================================================= */}
-      <header className="border-b-2 border-deepgreen px-3 sm:px-6 py-1.5 bg-cream sticky top-0 z-40 backdrop-blur-md">
+      <header className="border-b-2 border-deepgreen px-3 sm:px-6 py-2 bg-cream sticky top-0 z-40 backdrop-blur-md">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           {/* Masthead Branding */}
           <div className="flex items-baseline gap-2.5">
-            <Link href="/" className="text-2xl sm:text-3xl font-black tracking-tighter uppercase font-serif text-deepgreen hover:opacity-95 transition-opacity inline-block">
+            <Link
+              href="/"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="text-2xl sm:text-3xl font-black tracking-tighter uppercase font-serif text-deepgreen hover:opacity-95 transition-opacity inline-block"
+            >
               YAARO
               <span className="text-tomato font-serif italic text-xl sm:text-2xl lowercase">
                 .live
@@ -139,9 +165,9 @@ export default function HomePage() {
             </span>
           </div>
 
-          {/* Editorial Nav Links & Primary Action */}
-          <div className="flex items-center gap-3 sm:gap-5 font-mono text-xs uppercase tracking-wider">
-            <nav className="flex items-center gap-2.5 sm:gap-4 text-[11px] sm:text-xs">
+          {/* Desktop Navigation Links & Primary Action */}
+          <div className="hidden md:flex items-center gap-4 sm:gap-6 font-mono text-xs uppercase tracking-wider">
+            <nav className="flex items-center gap-3 sm:gap-4 text-[11px] sm:text-xs">
               <a
                 href="#manifesto"
                 className="hover:text-tomato transition-colors underline decoration-tomato decoration-2 underline-offset-4 font-bold"
@@ -165,14 +191,14 @@ export default function HomePage() {
                   <Link
                     href="/discover"
                     prefetch={true}
-                    className="hover:text-tomato transition-colors underline decoration-deepgreen/30 decoration-1 underline-offset-4 hidden sm:inline"
+                    className="hover:text-tomato transition-colors underline decoration-deepgreen/30 decoration-1 underline-offset-4"
                   >
                     04. Discover
                   </Link>
                   <Link
                     href="/dashboard"
                     prefetch={true}
-                    className="hover:text-tomato transition-colors underline decoration-tomato decoration-2 underline-offset-4 font-bold text-tomato hidden sm:inline"
+                    className="hover:text-tomato transition-colors underline decoration-tomato decoration-2 underline-offset-4 font-bold text-tomato"
                   >
                     05. Dashboard
                   </Link>
@@ -181,7 +207,7 @@ export default function HomePage() {
                 <Link
                   href="/login"
                   prefetch={true}
-                  className="hover:text-tomato transition-colors underline decoration-deepgreen/30 decoration-1 underline-offset-4 hidden sm:inline"
+                  className="hover:text-tomato transition-colors underline decoration-deepgreen/30 decoration-1 underline-offset-4"
                 >
                   04. Sign In
                 </Link>
@@ -191,7 +217,7 @@ export default function HomePage() {
               <Link
                 href="/dashboard"
                 prefetch={true}
-                className="px-3 py-1 bg-tomato hover:bg-tomato-dark text-cream-light font-serif font-bold tracking-tight rounded-full transition-all shadow-[2px_2px_0px_#263F32] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_#263F32] flex items-center gap-1 text-[11px] sm:text-xs"
+                className="px-3.5 py-1.5 bg-tomato hover:bg-tomato-dark text-cream-light font-serif font-bold tracking-tight rounded-full transition-all shadow-[2px_2px_0px_#263F32] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_#263F32] flex items-center gap-1 text-[11px] sm:text-xs"
               >
                 <span>Enter Dashboard</span>
                 <span className="text-[10px]">↗</span>
@@ -200,15 +226,134 @@ export default function HomePage() {
               <Link
                 href="/signup"
                 prefetch={true}
-                className="px-3 py-1 bg-tomato hover:bg-tomato-dark text-cream-light font-serif font-bold tracking-tight rounded-full transition-all shadow-[2px_2px_0px_#263F32] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_#263F32] flex items-center gap-1 text-[11px] sm:text-xs"
+                className="px-3.5 py-1.5 bg-tomato hover:bg-tomato-dark text-cream-light font-serif font-bold tracking-tight rounded-full transition-all shadow-[2px_2px_0px_#263F32] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_#263F32] flex items-center gap-1 text-[11px] sm:text-xs"
               >
                 <span>Join Collective</span>
                 <span className="text-[10px]">↗</span>
               </Link>
             )}
           </div>
+
+          {/* Mobile Navigation Controls: Quick CTA + Hamburger Menu Toggle */}
+          <div className="flex md:hidden items-center gap-2">
+            {currentUser ? (
+              <Link
+                href="/dashboard"
+                prefetch={true}
+                className="px-3 py-1 bg-tomato text-cream-light font-serif font-bold tracking-tight rounded-full text-[11px] shadow-[1px_1px_0px_#263F32]"
+              >
+                Dashboard ↗
+              </Link>
+            ) : (
+              <Link
+                href="/signup"
+                prefetch={true}
+                className="px-3 py-1 bg-tomato text-cream-light font-serif font-bold tracking-tight rounded-full text-[11px] shadow-[1px_1px_0px_#263F32]"
+              >
+                Join ↗
+              </Link>
+            )}
+            <button
+              data-landing-menu-toggle
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label="Toggle Navigation Menu"
+              className="p-1.5 border-2 border-deepgreen bg-cream text-deepgreen hover:bg-butter transition-colors shadow-[1px_1px_0px_#263F32]"
+            >
+              {isMobileMenuOpen ? <X className="w-5 h-5 text-tomato" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
       </header>
+
+      {/* Mobile Editorial Dropdown Drawer (Clicking anywhere closes menu) */}
+      {isMobileMenuOpen && (
+        <div
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="md:hidden fixed inset-0 z-50 bg-deepgreen/50 backdrop-blur-sm animate-in fade-in duration-150"
+        >
+          <div
+            data-landing-menu-container
+            onClick={(e) => e.stopPropagation()}
+            className="absolute top-0 right-0 left-0 bg-cream border-b-2 border-deepgreen p-5 shadow-[0_8px_20px_rgba(38,63,50,0.2)] font-serif space-y-4"
+          >
+            <div className="flex items-center justify-between border-b border-deepgreen/20 pb-3">
+              <span className="font-mono text-xs uppercase font-bold text-tomato tracking-widest">
+                YAARO Navigation Menu
+              </span>
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-1 border border-deepgreen bg-cream hover:bg-tomato hover:text-cream text-deepgreen"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <nav className="flex flex-col space-y-2 font-mono text-xs uppercase tracking-wider">
+              <a
+                href="#manifesto"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2.5 border border-deepgreen/30 bg-cream-light font-bold flex items-center justify-between hover:bg-butter transition-colors"
+              >
+                <span>01. Living Manifesto</span>
+                <ChevronRight className="w-3.5 h-3.5 text-deepgreen/50" />
+              </a>
+              <a
+                href="#chemistry"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2.5 border border-deepgreen/30 bg-cream-light font-bold flex items-center justify-between hover:bg-butter transition-colors"
+              >
+                <span>02. Roommate Chemistry</span>
+                <ChevronRight className="w-3.5 h-3.5 text-deepgreen/50" />
+              </a>
+              <a
+                href="#directory"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2.5 border border-deepgreen/30 bg-cream-light font-bold flex items-center justify-between hover:bg-butter transition-colors"
+              >
+                <span>03. Curated Directory</span>
+                <ChevronRight className="w-3.5 h-3.5 text-deepgreen/50" />
+              </a>
+              <Link
+                href="/discover"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2.5 border border-deepgreen/30 bg-cream-light font-bold flex items-center justify-between hover:bg-butter transition-colors"
+              >
+                <span>04. Roommate Discovery</span>
+                <ChevronRight className="w-3.5 h-3.5 text-deepgreen/50" />
+              </Link>
+              {currentUser ? (
+                <Link
+                  href="/dashboard"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-2.5 border-2 border-tomato bg-tomato/10 text-tomato font-bold flex items-center justify-between"
+                >
+                  <span>05. Resident Dashboard</span>
+                  <span>↗</span>
+                </Link>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-2.5 border border-deepgreen bg-cream font-bold flex items-center justify-between hover:bg-butter transition-colors"
+                >
+                  <span>05. Resident Sign In</span>
+                  <span>→</span>
+                </Link>
+              )}
+            </nav>
+
+            <div className="pt-2 border-t border-deepgreen/20">
+              <Link
+                href={currentUser ? '/dashboard' : '/signup'}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="w-full py-3 bg-tomato hover:bg-tomato-dark text-cream-light font-serif font-bold uppercase text-center block text-xs tracking-wider shadow-[3px_3px_0px_#263F32] transition-colors"
+              >
+                {currentUser ? 'Enter Resident Dashboard ↗' : 'Join YAARO Collective ↗'}
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* =========================================================
           SECTION 2: HERO SECTION (ASYMMETRIC MAGAZINE SPREAD)
@@ -352,7 +497,7 @@ export default function HomePage() {
           SECTION 3: BRAND STORY & CULTURAL MANIFESTO (ASYMMETRIC)
       ========================================================= */}
       <section
-        className="border-b-2 border-deepgreen bg-cream-light py-16 px-6 md:px-12"
+        className="border-b-2 border-deepgreen bg-cream-light py-10 sm:py-16 px-4 sm:px-6 md:px-12"
         id="manifesto"
       >
         <div className="max-w-7xl mx-auto">
@@ -453,7 +598,7 @@ export default function HomePage() {
       {/* =========================================================
           SECTION 4: THE CHEMISTRY EXPERIENCE (INTERACTIVE SURVEY)
       ========================================================= */}
-      <section className="border-b-2 border-deepgreen bg-cream py-16 px-6 md:px-12" id="chemistry">
+      <section className="border-b-2 border-deepgreen bg-cream py-10 sm:py-16 px-4 sm:px-6 md:px-12" id="chemistry">
         <div className="max-w-7xl mx-auto">
           {/* Section Header */}
           <div className="flex flex-col md:flex-row md:items-end justify-between border-b-2 border-deepgreen pb-6 mb-10 gap-4">
@@ -619,7 +764,7 @@ export default function HomePage() {
           SECTION 5: CURATED LIVING DIRECTORY (ROOMS & SPACES)
       ========================================================= */}
       <section
-        className="border-b-2 border-deepgreen bg-cream-light py-16 px-6 md:px-12"
+        className="border-b-2 border-deepgreen bg-cream-light py-10 sm:py-16 px-4 sm:px-6 md:px-12"
         id="directory"
       >
         <div className="max-w-7xl mx-auto">
@@ -856,7 +1001,7 @@ export default function HomePage() {
           SECTION 6: DISTINCTIVE GEN Z FOOTER (HIGH CONTRAST)
       ========================================================= */}
       <footer
-        className="bg-deepgreen text-cream border-t-4 border-tomato pt-16 pb-12 px-6 md:px-12"
+        className="bg-deepgreen text-cream border-t-4 border-tomato pt-12 sm:pt-16 pb-10 sm:pb-12 px-4 sm:px-6 md:px-12"
         id="join"
       >
         <div className="max-w-7xl mx-auto">
