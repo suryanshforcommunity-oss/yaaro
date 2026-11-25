@@ -3,7 +3,21 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Sparkles, Users, Home, HelpCircle, MessageSquare, Receipt, User, LogOut, Bell, Compass } from 'lucide-react'
+import {
+  Sparkles,
+  Users,
+  Home,
+  HelpCircle,
+  MessageSquare,
+  Receipt,
+  User,
+  LogOut,
+  Bell,
+  Compass,
+  Menu,
+  X,
+  ChevronRight,
+} from 'lucide-react'
 import { signOutUser } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/client'
 import NotificationsDrawer from './NotificationsDrawer'
@@ -28,11 +42,13 @@ export default function EditorialNavigation({
   const [userCity, setUserCity] = useState<string>(cachedProfile?.city || city || 'Pune')
   const [unreadNotifications, setUnreadNotifications] = useState<number>(cachedProfile?.unread || 0)
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false)
   const [isNavigating, setIsNavigating] = useState<boolean>(false)
 
-  // Reset navigation indicator whenever pathname updates
+  // Reset navigation indicator and close mobile menu whenever pathname updates
   useEffect(() => {
     setIsNavigating(false)
+    setIsMobileMenuOpen(false)
   }, [pathname])
 
   useEffect(() => {
@@ -76,7 +92,7 @@ export default function EditorialNavigation({
     loadUser()
   }, [city])
 
-  const navItems = [
+  const primaryNavItems = [
     { label: 'Landing', href: '/', icon: Compass },
     { label: 'Dashboard', href: '/dashboard', icon: Sparkles },
     { label: 'Discover', href: '/discover', icon: Users },
@@ -87,39 +103,48 @@ export default function EditorialNavigation({
     { label: 'Split Ledger', href: '/expenses', icon: Receipt },
   ]
 
+  // 5 primary tabs for mobile bottom bar
+  const mobileBottomTabs = [
+    { label: 'Dashboard', href: '/dashboard', icon: Sparkles },
+    { label: 'Discover', href: '/discover', icon: Users },
+    { label: 'Matches', href: '/matches', icon: Sparkles },
+    { label: 'Chat', href: '/chat', icon: MessageSquare },
+  ]
+
   const handleNavClick = (href: string) => {
     if (href !== pathname) {
       setIsNavigating(true)
     }
+    setIsMobileMenuOpen(false)
   }
 
   return (
     <>
       {/* Top Editorial Masthead */}
-      <header className="border-b-2 border-deepgreen px-6 sm:px-10 py-2.5 sm:py-3 bg-cream sticky top-0 z-40 backdrop-blur-md relative">
+      <header className="border-b-2 border-deepgreen px-4 sm:px-8 md:px-10 py-2 sm:py-2.5 bg-cream sticky top-0 z-40 backdrop-blur-md relative">
         {/* Subtle instant navigation progress indicator */}
         {isNavigating && (
           <div className="absolute bottom-0 left-0 right-0 h-[2.5px] bg-tomato animate-pulse z-50 shadow-[0_0_8px_#E95D43]" />
         )}
 
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-6 sm:gap-8">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 sm:gap-6">
           <div className="flex items-center">
             <Link
               href="/"
               prefetch={true}
               onClick={() => handleNavClick('/')}
-              className="flex items-baseline gap-2 group"
+              className="flex items-baseline gap-1.5 group"
               title="YAARO.live"
             >
-              <span className="text-3xl sm:text-4xl font-black tracking-tighter uppercase font-serif text-deepgreen group-hover:text-tomato transition-colors">
-                YAARO<span className="text-tomato font-serif italic text-2xl sm:text-3xl lowercase">.live</span>
+              <span className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tighter uppercase font-serif text-deepgreen group-hover:text-tomato transition-colors">
+                YAARO<span className="text-tomato font-serif italic text-xl sm:text-2xl md:text-3xl lowercase">.live</span>
               </span>
             </Link>
           </div>
 
           {/* Desktop Navigation Links with instant SPA prefetching */}
-          <nav className="hidden lg:flex items-center gap-8 xl:gap-9 font-sans font-bold text-xs uppercase tracking-wider">
-            {navItems.map((item) => {
+          <nav className="hidden lg:flex items-center gap-6 xl:gap-8 font-sans font-bold text-xs uppercase tracking-wider">
+            {primaryNavItems.map((item) => {
               const isActive = pathname === item.href
               return (
                 <Link
@@ -140,7 +165,7 @@ export default function EditorialNavigation({
           </nav>
 
           {/* Member Controls */}
-          <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Notification Bell */}
             <button
               onClick={() => setIsNotificationsOpen(true)}
@@ -159,17 +184,27 @@ export default function EditorialNavigation({
               href="/profile"
               prefetch={true}
               onClick={() => handleNavClick('/profile')}
-              className="px-3 py-1.5 border-2 border-deepgreen bg-cream-light hover:bg-butter transition-colors font-sans text-xs font-bold text-deepgreen flex items-center gap-2 shadow-[2px_2px_0px_#263F32]"
+              className="px-2.5 sm:px-3 py-1.5 border-2 border-deepgreen bg-cream-light hover:bg-butter transition-colors font-sans text-xs font-bold text-deepgreen flex items-center gap-1.5 sm:gap-2 shadow-[2px_2px_0px_#263F32]"
             >
               <User className="h-3.5 w-3.5 text-tomato" />
-              <span className="hidden sm:inline">{userName}</span>
+              <span className="hidden md:inline">{userName}</span>
             </Link>
+
             <button
               onClick={() => signOutUser()}
-              className="p-1.5 border-2 border-deepgreen bg-cream hover:bg-tomato hover:text-cream transition-colors text-deepgreen shadow-[1px_1px_0px_#263F32]"
+              className="hidden sm:inline-flex p-1.5 border-2 border-deepgreen bg-cream hover:bg-tomato hover:text-cream transition-colors text-deepgreen shadow-[1px_1px_0px_#263F32]"
               title="Sign Out"
             >
               <LogOut className="h-4 w-4" />
+            </button>
+
+            {/* Mobile Menu Toggle Button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="lg:hidden p-1.5 border-2 border-deepgreen bg-cream hover:bg-butter text-deepgreen shadow-[2px_2px_0px_#263F32] flex items-center justify-center"
+              title="Menu"
+            >
+              {isMobileMenuOpen ? <X className="h-4 w-4 text-tomato" /> : <Menu className="h-4 w-4" />}
             </button>
           </div>
         </div>
@@ -182,10 +217,72 @@ export default function EditorialNavigation({
         onUpdateCount={setUnreadNotifications}
       />
 
-      {/* Mobile Editorial Bottom Tab Bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-cream border-t-2 border-deepgreen safe-bottom shadow-[0px_-4px_10px_rgba(38,63,50,0.06)] font-sans">
-        <div className="grid grid-cols-8 py-2 px-1 text-center font-bold text-[8px]">
-          {navItems.map((item) => {
+      {/* Mobile Slide-Up / Dropdown Navigation Menu */}
+      {isMobileMenuOpen && (
+        <div className="lg:hidden fixed inset-0 z-50 bg-deepgreen/40 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="absolute top-0 right-0 left-0 bg-cream border-b-2 border-deepgreen p-5 shadow-[0_8px_20px_rgba(38,63,50,0.15)] font-sans space-y-4">
+            <div className="flex items-center justify-between border-b border-deepgreen/20 pb-3">
+              <span className="font-serif font-black uppercase text-sm tracking-wider text-deepgreen">
+                YAARO Directory Menu
+              </span>
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-1 border border-deepgreen bg-cream hover:bg-tomato hover:text-cream text-deepgreen"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              {primaryNavItems.map((item) => {
+                const isActive = pathname === item.href
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    prefetch={true}
+                    onClick={() => handleNavClick(item.href)}
+                    className={`p-3 border-2 font-bold text-xs uppercase flex items-center justify-between transition-all ${
+                      isActive
+                        ? 'border-tomato bg-tomato/10 text-tomato shadow-[2px_2px_0px_#E95D43]'
+                        : 'border-deepgreen/30 bg-cream-light text-deepgreen hover:border-deepgreen'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Icon className="h-4 w-4 text-tomato" />
+                      <span>{item.label}</span>
+                    </div>
+                    <ChevronRight className="h-3 w-3 text-deepgreen/40" />
+                  </Link>
+                )
+              })}
+            </div>
+
+            <div className="pt-2 border-t border-deepgreen/20 flex items-center justify-between font-mono text-xs">
+              <Link
+                href="/profile"
+                prefetch={true}
+                onClick={() => handleNavClick('/profile')}
+                className="text-deepgreen hover:text-tomato underline font-bold"
+              >
+                My Dossier ({userName})
+              </Link>
+              <button
+                onClick={() => signOutUser()}
+                className="text-tomato hover:underline font-bold flex items-center gap-1"
+              >
+                <LogOut className="h-3.5 w-3.5" /> Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Editorial Bottom Tab Bar (5 High-Frequency Touch-Friendly Buttons) */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-cream border-t-2 border-deepgreen safe-bottom shadow-[0px_-4px_10px_rgba(38,63,50,0.06)] font-sans">
+        <div className="grid grid-cols-5 py-1.5 px-2 text-center font-bold text-[9px]">
+          {mobileBottomTabs.map((item) => {
             const isActive = pathname === item.href
             const Icon = item.icon
             return (
@@ -199,16 +296,27 @@ export default function EditorialNavigation({
                 }`}
               >
                 <div
-                  className={`p-1 rounded-sm mb-0.5 ${
+                  className={`p-1.5 rounded-sm mb-0.5 ${
                     isActive ? 'bg-tomato text-cream shadow-[1px_1px_0px_#263F32]' : ''
                   }`}
                 >
-                  <Icon className="h-3 w-3" />
+                  <Icon className="h-3.5 w-3.5" />
                 </div>
-                <span className="truncate max-w-[48px]">{item.label}</span>
+                <span className="truncate max-w-[56px]">{item.label}</span>
               </Link>
             )
           })}
+
+          {/* More Drawer Button */}
+          <button
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="flex flex-col items-center justify-center py-1 text-deepgreen/70 hover:text-deepgreen transition-colors"
+          >
+            <div className="p-1.5 rounded-sm mb-0.5 border border-deepgreen/20 bg-cream-light">
+              <Menu className="h-3.5 w-3.5 text-deepgreen" />
+            </div>
+            <span className="truncate max-w-[56px]">More</span>
+          </button>
         </div>
       </div>
     </>

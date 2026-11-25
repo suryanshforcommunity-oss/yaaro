@@ -538,7 +538,7 @@ function ChatContent() {
         {/* Main Chat Grid */}
         <div className="border-2 border-deepgreen bg-cream-light shadow-[8px_8px_0px_#263F32] grid grid-cols-1 md:grid-cols-12 min-h-[640px]">
           {/* Threads Column (4 Cols) */}
-          <div className="md:col-span-4 border-b-2 md:border-b-0 md:border-r-2 border-deepgreen bg-cream p-4 space-y-3 flex flex-col justify-between">
+          <div className={`md:col-span-4 border-b-2 md:border-b-0 md:border-r-2 border-deepgreen bg-cream p-4 space-y-3 flex flex-col justify-between ${activeThreadId ? 'hidden md:flex' : 'flex'}`}>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-[10px] uppercase tracking-widest text-deepgreen/60 font-bold block">
@@ -647,12 +647,20 @@ function ChatContent() {
           </div>
 
           {/* Active Conversation Stage (8 Cols) */}
-          <div className="md:col-span-8 flex flex-col justify-between p-4 sm:p-6 bg-cream-light">
+          <div className={`md:col-span-8 flex-col justify-between p-3 sm:p-6 bg-cream-light ${activeThreadId ? 'flex' : 'hidden md:flex'}`}>
             {/* Conversation Header */}
             {currentThread ? (
               <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b-2 border-deepgreen pb-4 gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 border-2 border-deepgreen bg-sand overflow-hidden shrink-0 shadow-[2px_2px_0px_#263F32]">
+                  {/* Mobile Back Button to Thread List */}
+                  <button
+                    onClick={() => setActiveThreadId('')}
+                    className="md:hidden p-1.5 border-2 border-deepgreen bg-cream hover:bg-butter text-deepgreen font-mono text-xs font-bold shrink-0 shadow-[1px_1px_0px_#263F32]"
+                    title="Back to Conversations"
+                  >
+                    ← All
+                  </button>
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 border-2 border-deepgreen bg-sand overflow-hidden shrink-0 shadow-[2px_2px_0px_#263F32]">
                     {currentThread.avatarUrl ? (
                       <img
                         src={currentThread.avatarUrl}

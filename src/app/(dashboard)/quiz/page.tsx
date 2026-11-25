@@ -1,8 +1,6 @@
 'use client'
 
-export const dynamic = 'force-dynamic'
-
-import { useState, useEffect, useTransition } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import {
   HelpCircle,
@@ -128,27 +126,38 @@ export default function ChemistryQuizPage() {
   >([])
   const [selectedCandidate, setSelectedCandidate] = useState<string>('')
   const [comparisonData, setComparisonData] = useState<PairwiseComparisonResult | null>(null)
-  const [isPending, startTransition] = useTransition()
+  const [isComparing, setIsComparing] = useState<boolean>(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle')
   const [challengeSuccessMsg, setChallengeSuccessMsg] = useState<string | null>(null)
   const [challengesList, setChallengesList] = useState<any[]>([])
+
+  const isMountedRef = useRef(true)
+
+  useEffect(() => {
+    isMountedRef.current = true
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
 
   // Filter questions for active game category
   const categoryQuestions = CHEMISTRY_QUESTIONS.filter((q) => q.game_category === activeCategory)
   const currentQuestion: ChemistryQuestion = categoryQuestions[currentQIndex] || categoryQuestions[0]
 
-  // Load existing answers and comparison on mount
+  // Load existing answers and initial candidate on mount safely
   useEffect(() => {
-    async function loadInitial() {
-      const answers = await getUserQuizAnswers()
-      if (answers && Object.keys(answers).length > 0) {
-        setUserAnswers((prev) => ({ ...prev, ...answers }))
-      }
+    let isCancelled = false
 
-      let initialTargetId = ''
+    async function loadInitial() {
       try {
+        const answers = await getUserQuizAnswers()
+        if (!isCancelled && answers && Object.keys(answers).length > 0) {
+          setUserAnswers((prev) => ({ ...prev, ...answers }))
+        }
+
+        let initialTargetId = ''
         const feed = await getDiscoveryFeed()
-        if (feed && feed.length > 0) {
+        if (!isCancelled && feed && feed.length > 0) {
           const mapped = feed.map((c) => ({
             id: c.id,
             name: c.fullName,
@@ -163,39 +172,71 @@ export default function ChemistryQuizPage() {
           initialTargetId = mapped[0].id
           setSelectedCandidate(initialTargetId)
         }
+
+        const comparison = await getPairwiseComparison(initialTargetId || undefined)
+        if (!isCancelled) {
+          setComparisonData(comparison)
+        }
+
+        const challenges = await getGameChallenges()
+        if (!isCancelled) {
+          setChallengesList(challenges)
+        }
       } catch (err) {
-        console.error('Failed to load discovery candidates:', err)
+        console.error('Quiz initialization notice:', err)
       }
-
-      const comparison = await getPairwiseComparison(initialTargetId || undefined)
-      setComparisonData(comparison)
-
-      const challenges = await getGameChallenges()
-      setChallengesList(challenges)
     }
+
     loadInitial()
+
+    return () => {
+      isCancelled = true
+    }
   }, [])
 
-  // Recalculate comparison whenever selected candidate or answers change
+  // Recalculate comparison only when user actively switches candidate or views comparison tab
   useEffect(() => {
-    if (!selectedCandidate && candidatesList.length > 0) {
-      setSelectedCandidate(candidatesList[0].id)
-      return
+    if (!selectedCandidate) return
+    let isCancelled = false
+
+    async function updateComparison() {
+      if (!isMountedRef.current) return
+      setIsComparing(true)
+      try {
+        const comparison = await getPairwiseComparison(selectedCandidate, userAnswers)
+        if (!isCancelled && isMountedRef.current) {
+          setComparisonData(comparison)
+        }
+      } catch (err) {
+        console.error('Failed to update comparison:', err)
+      } finally {
+        if (!isCancelled && isMountedRef.current) {
+          setIsComparing(false)
+        }
+      }
     }
-    startTransition(async () => {
-      const comparison = await getPairwiseComparison(selectedCandidate || undefined, userAnswers)
-      setComparisonData(comparison)
-    })
-  }, [selectedCandidate, userAnswers, candidatesList])
+
+    if (activeMainTab === 'compare') {
+      updateComparison()
+    }
+
+    return () => {
+      isCancelled = true
+    }
+  }, [selectedCandidate, activeMainTab])
 
   const handleSelectOption = (questionOrder: number, optionKey: string) => {
     const updated = { ...userAnswers, [questionOrder]: optionKey }
     setUserAnswers(updated)
     setSaveStatus('saved')
-    setTimeout(() => setSaveStatus('idle'), 2000)
+    setTimeout(() => {
+      if (isMountedRef.current) setSaveStatus('idle')
+    }, 2000)
 
-    // Fire and forget server persistence
-    saveQuizAnswer(questionOrder, optionKey)
+    // Fire and forget server persistence in the background
+    saveQuizAnswer(questionOrder, optionKey).catch((err) => {
+      console.warn('Answer save notice:', err)
+    })
   }
 
   const handleCategorySwitch = (cat: GameCategory) => {
@@ -256,7 +297,7 @@ export default function ChemistryQuizPage() {
                 <span>•</span>
                 <span className="text-deepgreen/70">Strict 25/15/15/10/10/10/5/10 Architecture</span>
               </div>
-              <h1 className="text-4xl sm:text-6xl font-black uppercase tracking-tight text-deepgreen mt-0.5">
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black uppercase tracking-tight text-deepgreen mt-0.5">
                 ROOMMATE CHEMISTRY
               </h1>
               <p className="font-serif italic text-sm text-deepgreen/80 mt-1">
