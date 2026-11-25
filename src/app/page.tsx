@@ -32,22 +32,14 @@ export default function HomePage() {
   const [liveRooms, setLiveRooms] = useState<RoomItem[]>([])
   const [isLoadingRooms, setIsLoadingRooms] = useState<boolean>(true)
 
-  // Close mobile menu when clicked anywhere on the screen or pressed Escape
+  // Close mobile menu on Escape key press
   useEffect(() => {
     if (!isMobileMenuOpen) return
-    const handleGlobalClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement
-      if (!target.closest('[data-landing-menu-container]') && !target.closest('[data-landing-menu-toggle]')) {
-        setIsMobileMenuOpen(false)
-      }
-    }
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setIsMobileMenuOpen(false)
     }
-    window.addEventListener('click', handleGlobalClick)
     window.addEventListener('keydown', handleKeyDown)
     return () => {
-      window.removeEventListener('click', handleGlobalClick)
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [isMobileMenuOpen])
@@ -254,10 +246,14 @@ export default function HomePage() {
               </Link>
             )}
             <button
+              type="button"
               data-landing-menu-toggle
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsMobileMenuOpen((prev) => !prev)
+              }}
               aria-label="Toggle Navigation Menu"
-              className="p-1.5 border-2 border-deepgreen bg-cream text-deepgreen hover:bg-butter transition-colors shadow-[1px_1px_0px_#263F32]"
+              className="p-2 border-2 border-deepgreen bg-cream text-deepgreen hover:bg-butter active:bg-butter transition-colors shadow-[1px_1px_0px_#263F32] touch-manipulation cursor-pointer flex items-center justify-center select-none"
             >
               {isMobileMenuOpen ? <X className="w-5 h-5 text-tomato" /> : <Menu className="w-5 h-5" />}
             </button>

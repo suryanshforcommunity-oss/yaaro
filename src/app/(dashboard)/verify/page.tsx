@@ -14,6 +14,8 @@ import {
   Heart,
   Send,
   Loader2,
+  RefreshCw,
+  ExternalLink,
 } from 'lucide-react'
 import EditorialNavigation from '@/components/EditorialNavigation'
 import {
@@ -27,66 +29,75 @@ export default function VerificationCenterPage() {
   const [state, setState] = useState<VerificationProfileState | null>(null)
   const [userEmail, setUserEmail] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(true)
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false)
   const [statusMsg, setStatusMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
 
-  // Email OTP verification states
-  const [otpSent, setOtpSent] = useState<boolean>(false)
+  // Email verification states
+  const [emailSent, setEmailSent] = useState<boolean>(false)
   const [otpInput, setOtpInput] = useState<string>('')
-  const [isSendingOtp, setIsSendingOtp] = useState<boolean>(false)
-  const [isVerifyingOtp, setIsVerifyingOtp] = useState<boolean>(false)
+  const [isSendingEmail, setIsSendingEmail] = useState<boolean>(false)
+  const [isVerifyingCode, setIsVerifyingCode] = useState<boolean>(false)
+
+  const refreshStatus = async (showNotification = false) => {
+    setIsRefreshing(true)
+    const res = await getVerificationStatusAction()
+    if (res.success && res.state) {
+      setState(res.state)
+      setUserEmail(res.userEmail || '')
+      if (showNotification) {
+        if (res.state.badgeEligible) {
+          setStatusMsg({ text: '✓ Congratulations! Your account holds Verified YAARO Member status.', type: 'success' })
+        } else {
+          setStatusMsg({ text: 'Verification pending. Please click the link in your email or enter your code.', type: 'error' })
+        }
+      }
+    }
+    setIsRefreshing(false)
+    setLoading(false)
+  }
 
   useEffect(() => {
-    async function loadStatus() {
-      setLoading(true)
-      const res = await getVerificationStatusAction()
-      if (res.success && res.state) {
-        setState(res.state)
-        setUserEmail(res.userEmail || '')
-      }
-      setLoading(false)
-    }
-    loadStatus()
+    refreshStatus(false)
   }, [])
 
-  const handleSendEmailOtp = async (e: React.FormEvent) => {
+  const handleSendVerificationEmail = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSendingOtp(true)
+    setIsSendingEmail(true)
     setStatusMsg(null)
 
     const res = await sendEmailOtpAction()
-    setIsSendingOtp(false)
+    setIsSendingEmail(false)
 
     if (res.success) {
-      setOtpSent(true)
+      setEmailSent(true)
       setStatusMsg({
-        text: res.message || `Verification code sent to ${userEmail}. Check your inbox!`,
+        text: res.message || `Verification email dispatched to ${userEmail}. Check your inbox!`,
         type: 'success',
       })
     } else {
-      setStatusMsg({ text: res.message || 'Failed to dispatch code.', type: 'error' })
+      setStatusMsg({ text: res.message || 'Failed to dispatch verification email.', type: 'error' })
     }
   }
 
-  const handleVerifyEmailOtp = async (e: React.FormEvent) => {
+  const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!otpInput.trim()) {
-      setStatusMsg({ text: 'Please enter the 6-digit code received on your email.', type: 'error' })
+      setStatusMsg({ text: 'Please enter the verification code or token from your email.', type: 'error' })
       return
     }
 
-    setIsVerifyingOtp(true)
+    setIsVerifyingCode(true)
     setStatusMsg(null)
 
     const res = await verifyEmailOtpAction(otpInput)
-    setIsVerifyingOtp(false)
+    setIsVerifyingCode(false)
 
     if (res.success) {
       setStatusMsg({ text: 'Email verified! You are now a Verified YAARO Member.', type: 'success' })
-      setOtpSent(false)
-      const fresh = await getVerificationStatusAction()
-      if (fresh.state) setState(fresh.state)
+      setOtpInput('')
+      await refreshStatus(false)
     } else {
-      setStatusMsg({ text: res.message || 'Invalid verification code.', type: 'error' })
+      setStatusMsg({ text: res.message || 'Invalid or expired verification code.', type: 'error' })
     }
   }
 
@@ -114,7 +125,17 @@ export default function VerificationCenterPage() {
             </div>
 
             {/* Current Badge Status Pill */}
-            <div className="shrink-0">
+            <div className="shrink-0 flex items-center gap-2">
+              <button
+                onClick={() => refreshStatus(true)}
+                disabled={isRefreshing}
+                className="px-3 py-2 border-2 border-deepgreen bg-cream hover:bg-butter text-deepgreen font-mono text-xs font-bold flex items-center gap-1.5 shadow-[2px_2px_0px_#263F32] transition-colors disabled:opacity-50"
+                title="Check Verification Status"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Refresh Status</span>
+              </button>
+
               {state?.badgeEligible ? (
                 <div className="px-4 py-2 bg-emerald-100 border-2 border-emerald-700 text-emerald-900 font-mono text-xs font-bold flex items-center gap-2 shadow-[2px_2px_0px_#263F32]">
                   <CheckCircle2 className="w-4 h-4 text-emerald-700" />
@@ -123,7 +144,7 @@ export default function VerificationCenterPage() {
               ) : (
                 <div className="px-4 py-2 bg-butter border-2 border-deepgreen text-deepgreen font-mono text-xs font-bold flex items-center gap-2 shadow-[2px_2px_0px_#263F32]">
                   <Lock className="w-4 h-4 text-tomato" />
-                  <span>1-MIN EMAIL VERIFICATION PENDING</span>
+                  <span>EMAIL VERIFICATION PENDING</span>
                 </div>
               )}
             </div>
@@ -179,7 +200,7 @@ export default function VerificationCenterPage() {
                 </div>
               </div>
               <p className="font-serif italic text-xs text-deepgreen/80">
-                100% Free OTP verification code sent directly to your inbox with zero SMS hurdles.
+                100% Free verification via 1-click magic link or code sent to your inbox.
               </p>
             </div>
 
@@ -191,7 +212,7 @@ export default function VerificationCenterPage() {
             ) : (
               <div className="pt-3 border-t border-deepgreen/20">
                 <a
-                  href="#email-otp-box"
+                  href="#email-verification-desk"
                   className="w-full py-2 bg-tomato hover:bg-tomato-dark text-cream-light font-mono text-xs font-bold uppercase text-center block shadow-[2px_2px_0px_#263F32] transition-all"
                 >
                   Verify Email Now ↓
@@ -285,95 +306,116 @@ export default function VerificationCenterPage() {
           </div>
         </div>
 
-        {/* Free Email Verification Action Box */}
+        {/* Free Email Verification Action Desk */}
         {!state?.badgeEligible ? (
-          <div id="email-otp-box" className="border-2 border-deepgreen bg-cream-light p-6 sm:p-8 shadow-[6px_6px_0px_#263F32] space-y-6">
+          <div id="email-verification-desk" className="border-2 border-deepgreen bg-cream-light p-6 sm:p-8 shadow-[6px_6px_0px_#263F32] space-y-6">
             <div className="border-b border-deepgreen/20 pb-4">
               <span className="font-mono text-[10px] uppercase tracking-widest text-tomato font-bold block mb-1">
                 INSTANT FREE VERIFICATION
               </span>
               <h3 className="font-serif font-black uppercase text-2xl text-deepgreen">
-                Verify Your Email with a 6-Digit Code
+                Confirm Your Email Address
               </h3>
               <p className="font-serif italic text-xs text-deepgreen/70 mt-1">
-                Zero document uploads, no government ID friction, and no carrier SMS fees. We send a secure one-time passcode directly to your inbox.
+                Zero document uploads, no government ID friction, and no carrier SMS fees. Supabase sends a secure confirmation magic link &amp; code directly to your inbox.
               </p>
             </div>
 
-            <div className="max-w-md space-y-4">
-              <div className="p-3 bg-butter/30 border border-deepgreen font-mono text-xs space-y-1">
-                <span className="text-[10px] text-deepgreen/60 uppercase block">Registered Email Address:</span>
-                <span className="font-bold text-sm text-deepgreen">{userEmail || 'Your Account Email'}</span>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+              {/* Left Column: Send Email & Magic Link Instructions */}
+              <div className="space-y-4 border-b md:border-b-0 md:border-r border-deepgreen/20 pb-6 md:pb-0 md:pr-6">
+                <div className="p-3 bg-butter/30 border border-deepgreen font-mono text-xs space-y-1">
+                  <span className="text-[10px] text-deepgreen/60 uppercase block">Registered Email Address:</span>
+                  <span className="font-bold text-sm text-deepgreen">{userEmail || 'Your Account Email'}</span>
+                </div>
 
-              {!otpSent ? (
-                <form onSubmit={handleSendEmailOtp} className="space-y-3">
+                <form onSubmit={handleSendVerificationEmail} className="space-y-3">
                   <button
                     type="submit"
-                    disabled={isSendingOtp}
+                    disabled={isSendingEmail}
                     className="w-full py-3 bg-tomato hover:bg-tomato-dark text-cream-light font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-[3px_3px_0px_#263F32] transition-all hover:translate-x-[1px] hover:translate-y-[1px] disabled:opacity-50"
                   >
-                    {isSendingOtp ? (
+                    {isSendingEmail ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Sending Code to Inbox...</span>
+                        <span>Dispatching Verification Email...</span>
                       </>
                     ) : (
                       <>
                         <Send className="w-4 h-4" />
-                        <span>Send 6-Digit Code to My Email</span>
+                        <span>Send Verification Email / Magic Link ↗</span>
                       </>
                     )}
                   </button>
-                  <p className="font-mono text-[10px] text-deepgreen/60 text-center">
-                    Check your inbox or spam folder. Dispatches in 2–3 seconds.
-                  </p>
                 </form>
-              ) : (
-                <form onSubmit={handleVerifyEmailOtp} className="space-y-4 pt-2">
-                  <div className="space-y-1.5">
-                    <label className="font-mono text-xs uppercase font-bold text-deepgreen block">
-                      Enter 6-Digit Verification Code
+
+                <div className="p-3.5 bg-cream border border-deepgreen/40 space-y-2 text-xs">
+                  <span className="font-mono font-bold text-deepgreen uppercase block text-[11px]">
+                    Method A: One-Click Magic Link (Recommended)
+                  </span>
+                  <p className="font-serif text-deepgreen/80 text-xs leading-relaxed">
+                    Open your email inbox and click the **"Confirm Your Email"** or **"Log In"** button. Your browser will authenticate automatically and grant your verified badge!
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => refreshStatus(true)}
+                    disabled={isRefreshing}
+                    className="w-full mt-1 py-1.5 bg-cream border border-deepgreen hover:bg-butter font-mono text-[11px] font-bold uppercase text-deepgreen flex items-center justify-center gap-1.5 transition-colors"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    <span>I Clicked the Link — Check Status</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Right Column: ALWAYS VISIBLE Code Input Space */}
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <span className="font-mono text-xs uppercase font-bold text-deepgreen block">
+                    Method B: Enter 6-Digit Code / Token
+                  </span>
+                  <p className="font-serif italic text-xs text-deepgreen/70">
+                    If your email contained a 6-digit confirmation code, enter it below to verify immediately:
+                  </p>
+                </div>
+
+                <form onSubmit={handleVerifyCode} className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="font-mono text-[10px] uppercase tracking-wider text-deepgreen/70 block">
+                      VERIFICATION CODE / PASSCODE
                     </label>
                     <input
                       type="text"
                       placeholder="e.g. 123456"
                       value={otpInput}
                       onChange={(e) => setOtpInput(e.target.value)}
-                      maxLength={8}
-                      className="w-full px-4 py-2.5 border-2 border-deepgreen bg-cream font-mono text-lg tracking-widest text-deepgreen placeholder:text-deepgreen/30 focus:outline-none"
+                      className="w-full px-4 py-2.5 border-2 border-deepgreen bg-cream font-mono text-lg tracking-widest text-deepgreen placeholder:text-deepgreen/30 focus:outline-none focus:border-tomato"
                     />
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="submit"
-                      disabled={isVerifyingOtp}
-                      className="flex-1 py-3 bg-deepgreen hover:bg-tomato text-cream font-mono text-xs font-bold uppercase tracking-wider shadow-[3px_3px_0px_#E95D43] transition-all hover:translate-x-[1px] hover:translate-y-[1px] disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      {isVerifyingOtp ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Validating Code...</span>
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>Verify &amp; Claim Badge</span>
-                        </>
-                      )}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleSendEmailOtp}
-                      disabled={isSendingOtp}
-                      className="py-3 px-4 border-2 border-deepgreen bg-cream hover:bg-butter/50 font-mono text-xs uppercase text-deepgreen font-bold"
-                    >
-                      Resend
-                    </button>
-                  </div>
+                  <button
+                    type="submit"
+                    disabled={isVerifyingCode || !otpInput.trim()}
+                    className="w-full py-3 bg-deepgreen hover:bg-tomato text-cream font-mono text-xs font-bold uppercase tracking-wider shadow-[3px_3px_0px_#E95D43] transition-all hover:translate-x-[1px] hover:translate-y-[1px] disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isVerifyingCode ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Validating Code...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>Verify Code &amp; Claim Badge</span>
+                      </>
+                    )}
+                  </button>
                 </form>
-              )}
+
+                <p className="font-mono text-[10px] text-deepgreen/60">
+                  Tip: Emails usually arrive within 2–5 seconds. Check your spam/promotions folder if you don't see it immediately.
+                </p>
+              </div>
             </div>
           </div>
         ) : (

@@ -122,22 +122,14 @@ export default function EditorialNavigation({
     setIsMobileMenuOpen(false)
   }
 
-  // Close mobile menu if clicked anywhere on the screen
+  // Close mobile menu on Escape key press
   useEffect(() => {
     if (!isMobileMenuOpen) return
-    const handleGlobalClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement
-      if (!target.closest('[data-mobile-menu-container]') && !target.closest('[data-mobile-menu-toggle]')) {
-        setIsMobileMenuOpen(false)
-      }
-    }
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setIsMobileMenuOpen(false)
     }
-    window.addEventListener('click', handleGlobalClick)
     window.addEventListener('keydown', handleKeyDown)
     return () => {
-      window.removeEventListener('click', handleGlobalClick)
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [isMobileMenuOpen])
@@ -233,10 +225,15 @@ export default function EditorialNavigation({
 
             {/* Mobile Menu Toggle Button */}
             <button
+              type="button"
               data-mobile-menu-toggle
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="lg:hidden p-1.5 border-2 border-deepgreen bg-cream hover:bg-butter text-deepgreen shadow-[2px_2px_0px_#263F32] flex items-center justify-center"
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsMobileMenuOpen((prev) => !prev)
+              }}
+              className="lg:hidden p-2 border-2 border-deepgreen bg-cream hover:bg-butter active:bg-butter text-deepgreen shadow-[2px_2px_0px_#263F32] flex items-center justify-center touch-manipulation cursor-pointer select-none"
               title="Menu"
+              aria-label="Toggle Navigation Menu"
             >
               {isMobileMenuOpen ? <X className="h-4 w-4 text-tomato" /> : <Menu className="h-4 w-4" />}
             </button>

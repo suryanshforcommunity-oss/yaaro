@@ -222,6 +222,66 @@ export async function getGoogleOAuthUrl(redirectTo?: string): Promise<AuthRespon
 }
 
 /**
+ * Send Magic Link / Email OTP to sign in
+ */
+export async function sendEmailMagicLink(email: string): Promise<AuthResponse> {
+  const cleanEmail = email.trim()
+  if (!cleanEmail || !cleanEmail.includes('@')) {
+    return { success: false, error: 'Please enter a valid email address.' }
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase.auth.signInWithOtp({
+    email: cleanEmail,
+    options: {
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/callback?next=/dashboard`,
+    },
+  })
+
+  if (error) {
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder')) {
+      return { success: true, data: { simulated: true, email: cleanEmail, message: 'Magic link simulated in dev mode.' } }
+    }
+    return { success: false, error: error.message }
+  }
+
+  return { success: true, data }
+}
+
+/**
+ * Verify Email Code / OTP
+ */
+export async function verifyEmailOtp(email: string, token: string): Promise<AuthResponse> {
+  const cleanEmail = email.trim()
+  const cleanToken = token.trim()
+  if (!cleanEmail || !cleanToken) {
+    return { success: false, error: 'Email and verification code are required.' }
+  }
+
+  const supabase = await createClient()
+  const { data, error } = await supabase.auth.verifyOtp({
+    email: cleanEmail,
+    token: cleanToken,
+    type: 'email',
+  })
+
+  if (error) {
+    // Also try magiclink / signup token type
+    const { data: retryData, error: retryError } = await supabase.auth.verifyOtp({
+      email: cleanEmail,
+      token: cleanToken,
+      type: 'magiclink',
+    })
+    if (!retryError) {
+      return { success: true, data: retryData }
+    }
+    return { success: false, error: error.message }
+  }
+
+  return { success: true, data }
+}
+
+/**
  * Sign Out
  */
 export async function signOutUser() {
