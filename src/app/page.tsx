@@ -124,24 +124,24 @@ export default function HomePage() {
       {/* =========================================================
           SECTION 1: EXPRESSIVE EDITORIAL HEADER
       ========================================================= */}
-      <header className="border-b-2 border-deepgreen px-4 sm:px-8 py-2 bg-cream sticky top-0 z-40 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      <header className="border-b-2 border-deepgreen px-3 sm:px-6 py-1.5 bg-cream sticky top-0 z-40 backdrop-blur-md">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           {/* Masthead Branding */}
-          <div className="flex items-baseline gap-3">
-            <Link href="/" className="text-3xl sm:text-4xl font-black tracking-tighter uppercase font-serif text-deepgreen hover:opacity-95 transition-opacity inline-block">
+          <div className="flex items-baseline gap-2.5">
+            <Link href="/" className="text-2xl sm:text-3xl font-black tracking-tighter uppercase font-serif text-deepgreen hover:opacity-95 transition-opacity inline-block">
               YAARO
-              <span className="text-tomato font-serif italic text-2xl sm:text-3xl lowercase">
+              <span className="text-tomato font-serif italic text-xl sm:text-2xl lowercase">
                 .live
               </span>
             </Link>
-            <span className="hidden xl:inline text-[11px] font-mono tracking-wider uppercase text-deepgreen/60 border-l border-deepgreen/30 pl-3">
+            <span className="hidden xl:inline text-[10px] font-mono tracking-wider uppercase text-deepgreen/60 border-l border-deepgreen/30 pl-2.5">
               “Find your people. Find your place.”
             </span>
           </div>
 
           {/* Editorial Nav Links & Primary Action */}
-          <div className="flex items-center gap-5 sm:gap-6 font-mono text-xs uppercase tracking-wider">
-            <nav className="flex items-center gap-3.5 sm:gap-5">
+          <div className="flex items-center gap-3 sm:gap-5 font-mono text-xs uppercase tracking-wider">
+            <nav className="flex items-center gap-2.5 sm:gap-4 text-[11px] sm:text-xs">
               <a
                 href="#manifesto"
                 className="hover:text-tomato transition-colors underline decoration-tomato decoration-2 underline-offset-4 font-bold"
@@ -191,7 +191,7 @@ export default function HomePage() {
               <Link
                 href="/dashboard"
                 prefetch={true}
-                className="px-3.5 py-1.5 bg-tomato hover:bg-tomato-dark text-cream-light font-serif font-bold tracking-tight rounded-full transition-all shadow-[2px_2px_0px_#263F32] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_#263F32] flex items-center gap-1.5 text-xs"
+                className="px-3 py-1 bg-tomato hover:bg-tomato-dark text-cream-light font-serif font-bold tracking-tight rounded-full transition-all shadow-[2px_2px_0px_#263F32] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_#263F32] flex items-center gap-1 text-[11px] sm:text-xs"
               >
                 <span>Enter Dashboard</span>
                 <span className="text-[10px]">↗</span>
@@ -200,7 +200,7 @@ export default function HomePage() {
               <Link
                 href="/signup"
                 prefetch={true}
-                className="px-3.5 py-1.5 bg-tomato hover:bg-tomato-dark text-cream-light font-serif font-bold tracking-tight rounded-full transition-all shadow-[2px_2px_0px_#263F32] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_#263F32] flex items-center gap-1.5 text-xs"
+                className="px-3 py-1 bg-tomato hover:bg-tomato-dark text-cream-light font-serif font-bold tracking-tight rounded-full transition-all shadow-[2px_2px_0px_#263F32] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[1px_1px_0px_#263F32] flex items-center gap-1 text-[11px] sm:text-xs"
               >
                 <span>Join Collective</span>
                 <span className="text-[10px]">↗</span>
@@ -213,24 +213,24 @@ export default function HomePage() {
       {/* =========================================================
           SECTION 2: HERO SECTION (ASYMMETRIC MAGAZINE SPREAD)
       ========================================================= */}
-      <section className="border-b-2 border-deepgreen relative overflow-hidden">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 min-h-0">
+      <section className="border-b-2 border-deepgreen relative overflow-hidden lg:min-h-[calc(100vh-50px)] flex flex-col justify-center">
+        <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 min-h-0">
           {/* Left Column: Oversized Asymmetric Typography & Context (7 Cols) */}
-          <div className="lg:col-span-7 p-4 sm:p-5 lg:p-6 flex flex-col justify-between border-b lg:border-b-0 lg:border-r-2 border-deepgreen relative bg-cream">
+          <div className="lg:col-span-7 p-3.5 sm:p-4 lg:p-5 flex flex-col justify-between border-b lg:border-b-0 lg:border-r-2 border-deepgreen relative bg-cream">
             {/* Metadata Row */}
-            <div className="flex items-center justify-between border-b border-deepgreen/20 pb-1.5 mb-2.5 text-xs font-mono">
-              <span className="bg-deepgreen text-cream px-2 py-0.5 font-bold uppercase tracking-wider font-mono text-[10px]">
+            <div className="flex items-center justify-between border-b border-deepgreen/20 pb-1 mb-2 text-xs font-mono">
+              <span className="bg-deepgreen text-cream px-2 py-0.5 font-bold uppercase tracking-wider font-mono text-[9px] sm:text-[10px]">
                 Modern Shared Living
               </span>
-              <span className="text-deepgreen/70 text-[11px]">READ TIME: 2 MIN</span>
+              <span className="text-deepgreen/70 text-[10px] sm:text-[11px]">READ TIME: 2 MIN</span>
             </div>
 
             {/* Massive Headline in Playfair Display */}
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               <p className="text-[10px] sm:text-[11px] uppercase font-mono tracking-widest text-tomato font-bold">
                 A better way to share a home
               </p>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl xl:text-[56px] font-black uppercase tracking-tight leading-[0.93] text-deepgreen font-serif">
+              <h2 className="text-3xl sm:text-4xl md:text-[42px] xl:text-[50px] font-black uppercase tracking-tight leading-[0.92] text-deepgreen font-serif">
                 ROOMMATES? <br />
                 <span className="font-serif italic font-normal text-tomato tracking-normal lowercase">
                   nah.
@@ -238,14 +238,14 @@ export default function HomePage() {
                 <br />
                 YOUR PEOPLE.
               </h2>
-              <div className="w-12 h-1 bg-tomato mt-1.5" />
+              <div className="w-10 h-0.5 bg-tomato mt-1" />
             </div>
 
             {/* Narrative Subtext in Cursive Font & Interactive Badges */}
-            <div className="mt-3 pt-2.5 border-t border-deepgreen/20 space-y-3">
+            <div className="mt-2 pt-2 border-t border-deepgreen/20 space-y-2.5">
               <p
-                style={{ fontFamily: "'Dancing Script', 'Caveat', cursive" }}
-                className="font-cursive text-2xl sm:text-[27px] md:text-[29px] text-deepgreen leading-snug tracking-wide font-normal max-w-xl"
+                style={{ fontFamily: "'Dancing Script', 'Caveat', 'Segoe Script', 'Brush Script MT', 'Lucida Handwriting', cursive" }}
+                className="font-cursive text-xl sm:text-2xl md:text-[25px] text-deepgreen leading-snug tracking-wide font-normal max-w-xl italic"
               >
                 Shared-living in urban India is broken by brokers, awkward splitwise delays, and
                 clashing lifestyle rhythms.{' '}
@@ -256,38 +256,38 @@ export default function HomePage() {
 
               {/* Asymmetric Spec Badges */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-0.5 font-mono text-xs">
-                <div className="p-2 bg-butter/40 border border-deepgreen rounded-none">
-                  <span className="block text-tomato font-bold text-sm sm:text-base font-serif">0%</span>
-                  <span className="uppercase tracking-tight text-deepgreen/80 text-[10px]">
+                <div className="p-1.5 sm:p-2 bg-butter/40 border border-deepgreen rounded-none">
+                  <span className="block text-tomato font-bold text-xs sm:text-sm font-serif">0%</span>
+                  <span className="uppercase tracking-tight text-deepgreen/80 text-[9px] sm:text-[10px]">
                     Brokerage forever
                   </span>
                 </div>
-                <div className="p-2 bg-cream-light border border-deepgreen rounded-none">
-                  <span className="block text-deepgreen font-bold text-sm sm:text-base font-serif">
+                <div className="p-1.5 sm:p-2 bg-cream-light border border-deepgreen rounded-none">
+                  <span className="block text-deepgreen font-bold text-xs sm:text-sm font-serif">
                     2 Months
                   </span>
-                  <span className="uppercase tracking-tight text-deepgreen/80 text-[10px]">
+                  <span className="uppercase tracking-tight text-deepgreen/80 text-[9px] sm:text-[10px]">
                     Max Deposit
                   </span>
                 </div>
-                <div className="p-2 bg-deepgreen text-cream border border-deepgreen rounded-none col-span-2 sm:col-span-1">
-                  <span className="block text-butter font-bold text-sm sm:text-base font-serif">94%+</span>
-                  <span className="uppercase tracking-tight text-cream/80 text-[10px]">
+                <div className="p-1.5 sm:p-2 bg-deepgreen text-cream border border-deepgreen rounded-none col-span-2 sm:col-span-1">
+                  <span className="block text-butter font-bold text-xs sm:text-sm font-serif">94%+</span>
+                  <span className="uppercase tracking-tight text-cream/80 text-[9px] sm:text-[10px]">
                     Harmony Rate
                   </span>
                 </div>
               </div>
 
               {/* Micro CTA & Proof */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 pt-0.5">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 pt-0.5">
                 <a
                   href="#directory"
-                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-deepgreen text-cream hover:bg-tomato transition-all font-serif font-bold uppercase tracking-wider text-xs shadow-[3px_3px_0px_#E95D43]"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-deepgreen text-cream hover:bg-tomato transition-all font-serif font-bold uppercase tracking-wider text-[11px] sm:text-xs shadow-[3px_3px_0px_#E95D43]"
                 >
                   <span>Explore Verified Spaces Across Top Cities</span>
                   <span>↓</span>
                 </a>
-                <div className="flex items-center gap-2 text-[11px] font-mono text-deepgreen/70">
+                <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono text-deepgreen/70">
                   <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
                   <span>2,800+ verified members active</span>
                 </div>
@@ -296,16 +296,16 @@ export default function HomePage() {
           </div>
 
           {/* Right Column: Candid Editorial Visual Spread (5 Cols) */}
-          <div className="lg:col-span-5 bg-butter/30 relative flex flex-col justify-between p-4 sm:p-5 lg:p-6">
+          <div className="lg:col-span-5 bg-butter/30 relative flex flex-col justify-between p-3.5 sm:p-4 lg:p-5">
             {/* Butter Yellow Block & Overlapping Editorial Image */}
             <div className="relative z-10 my-auto">
               {/* Background Geometric Highlight Tile */}
-              <div className="absolute -top-3 -right-2 w-28 h-28 bg-butter rounded-none -z-10 border border-deepgreen hidden sm:block" />
+              <div className="absolute -top-2.5 -right-2 w-24 h-24 bg-butter rounded-none -z-10 border border-deepgreen hidden sm:block" />
 
               {/* Editorial Photo Container with Tape & Caption */}
-              <div className="relative bg-cream-light p-2 pb-3 border-2 border-deepgreen shadow-[4px_4px_0px_#263F32]">
+              <div className="relative bg-cream-light p-2 pb-2.5 border-2 border-deepgreen shadow-[3px_3px_0px_#263F32]">
                 {/* Analog Camera Stamp Tag */}
-                <div className="flex items-center justify-between pb-1 mb-1 border-b border-deepgreen/20 text-[10px] font-mono uppercase tracking-wider text-deepgreen/80">
+                <div className="flex items-center justify-between pb-1 mb-1 border-b border-deepgreen/20 text-[9px] sm:text-[10px] font-mono uppercase tracking-wider text-deepgreen/80">
                   <span>Verified Co-Living Collective</span>
                   <span className="text-tomato font-bold">VERIFIED CO-LIVING</span>
                 </div>
@@ -313,34 +313,34 @@ export default function HomePage() {
                 <div className="overflow-hidden relative group">
                   <img
                     alt="Two flatmates laughing over chai at sunlit apartment table"
-                    className="w-full h-[220px] sm:h-[250px] lg:h-[230px] xl:h-[260px] object-cover grayscale-[15%] contrast-[1.05] group-hover:grayscale-0 transition-all duration-500"
+                    className="w-full h-[180px] sm:h-[200px] lg:h-[190px] xl:h-[220px] object-cover grayscale-[15%] contrast-[1.05] group-hover:grayscale-0 transition-all duration-500"
                     src={heroPhotoUrl}
                     onError={(e) => {
                       // Graceful fallback to verified lifestyle photograph
                       ;(e.target as HTMLImageElement).src = heroFallbackUrl
                     }}
                   />
-                  <div className="absolute bottom-2 left-2 bg-deepgreen/90 text-cream px-2 py-0.5 text-[10px] font-mono tracking-wider backdrop-blur-sm border border-cream/20">
+                  <div className="absolute bottom-2 left-2 bg-deepgreen/90 text-cream px-2 py-0.5 text-[9px] sm:text-[10px] font-mono tracking-wider backdrop-blur-sm border border-cream/20">
                     Aarav (24, SDE) &amp; Rhea (24, Designer)
                   </div>
                 </div>
 
                 {/* Authentic Caption Snippet */}
-                <div className="pt-1.5 font-serif italic text-xs text-deepgreen/90 leading-snug">
+                <div className="pt-1 font-serif italic text-[11px] sm:text-xs text-deepgreen/90 leading-snug">
                   “We matched on weekend badminton &amp; quiet weekday WFH hours. Moved into a sunlit
                   apartment together within 4 days.”
                 </div>
               </div>
 
               {/* Secondary Overlapping Tag */}
-              <div className="mt-2.5 -ml-1 bg-tomato text-cream px-2.5 py-1 text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-widest inline-flex items-center gap-2 border border-deepgreen shadow-[2px_2px_0px_#263F32]">
+              <div className="mt-2 -ml-1 bg-tomato text-cream px-2 py-0.5 text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-widest inline-flex items-center gap-1.5 border border-deepgreen shadow-[2px_2px_0px_#263F32]">
                 <span>⚡ HARMONY SCORE: 96%</span>
                 <span>• NON-SMOKER FLAT</span>
               </div>
             </div>
 
             {/* Bottom Detail Footnote */}
-            <div className="border-t border-deepgreen/20 pt-2 mt-3 flex justify-between items-center text-[10px] font-mono text-deepgreen/60">
+            <div className="border-t border-deepgreen/20 pt-1.5 mt-2 flex justify-between items-center text-[9px] sm:text-[10px] font-mono text-deepgreen/60">
               <span>SOURCE: YAARO COMMUNITY DIARIES</span>
               <span>EST. 2026</span>
             </div>
