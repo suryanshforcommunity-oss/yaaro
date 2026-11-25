@@ -364,9 +364,16 @@ export default function DiscoverPage() {
                 <div>
                   <div className="flex items-baseline justify-between border-b border-deepgreen/20 pb-3 mb-4">
                     <div>
-                      <h2 className="text-3xl font-black uppercase text-deepgreen font-serif">
-                        {candidate.fullName}, {candidate.age}
-                      </h2>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h2 className="text-3xl font-black uppercase text-deepgreen font-serif">
+                          {candidate.fullName}, {candidate.age}
+                        </h2>
+                        {candidate.verificationTier && (
+                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono text-[10px] font-bold">
+                            {candidate.verificationTier}
+                          </span>
+                        )}
+                      </div>
                       <p className="font-mono text-xs text-tomato font-bold uppercase tracking-wider mt-0.5">
                         {candidate.occupation} @ {candidate.companyOrCollege}
                       </p>

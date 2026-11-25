@@ -47,6 +47,14 @@ YAARO is a modern shared-living platform built for urban India. It replaces awkw
 - 4 splitting methods: Equal split, Custom exact ₹ amount, Percentage % split, and Individual assignment.
 - Greedy pairwise debt simplification matrix and user-recorded settlement audit logs.
 
+### Phase 7 — Trust, Safety, Verification & Premium Subscriptions
+- Multi-step verification center (`/verify`) with phone SMS OTP validation, email confirmation, and human-audited identity credential review (Aadhaar, Passport, College ID, Work Badge).
+- Strict verification badge logic: never displays badges unless identity and phone checks genuinely succeed.
+- Trust & safety mechanisms: user reporting, mutual blocking, listing fraud reports, and automated suspicious broker keyword scanning.
+- Freemium subscription model with YAARO Club Pro (₹499/mo, ₹3,999/yr) and Landlord Collective (₹999/mo) with live entitlement checks.
+- Payment provider abstraction with Razorpay-ready integration for India and simulated sandbox test flow.
+- Comprehensive Central Compliance & Moderation Terminal (`/admin`) for user management, ID review queue, listing moderation, community reports, and subscription MRR tracking.
+
 ---
 
 ## Tech Stack

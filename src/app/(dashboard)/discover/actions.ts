@@ -36,7 +36,7 @@ interface CandidateWithMatch {
   avatarUrl: string | null
   bio: string
   hobbies: string[]
-  verificationTier: string
+  verificationTier: string | null
   compatibility: CompatibilityScore
   stickers: { label: string; bg: string; text: string }[]
 }
@@ -294,13 +294,13 @@ export async function getDiscoveryFeed(filters?: DiscoveryFilters): Promise<Cand
         })
       }
 
-      // Verification tier label
+      // Verification tier label - strictly only for verified users
       const verificationLabel =
-        p.verification_tier === 'gov_id_verified'
-          ? 'Aadhaar Verified'
+        p.verification_tier === 'gov_id_verified' || p.verification_tier === 'id_verified'
+          ? '✓ Aadhaar / ID Verified'
           : p.verification_tier === 'work_or_college'
-          ? 'Work / College Verified'
-          : 'Verified YAARO Member'
+          ? '✓ Work / College Verified'
+          : null
 
       evaluatedCandidates.push({
         id: p.id,

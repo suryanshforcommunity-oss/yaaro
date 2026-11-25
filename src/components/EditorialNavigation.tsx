@@ -16,6 +16,8 @@ import {
   Compass,
   Menu,
   X,
+  Award,
+  ShieldCheck,
   ChevronRight,
 } from 'lucide-react'
 import { signOutUser } from '@/lib/auth'
@@ -101,6 +103,8 @@ export default function EditorialNavigation({
     { label: 'Vibe Quiz', href: '/quiz', icon: HelpCircle },
     { label: 'Chat', href: '/chat', icon: MessageSquare },
     { label: 'Split Ledger', href: '/expenses', icon: Receipt },
+    { label: 'Club Pro', href: '/pricing', icon: Award },
+    { label: 'Verify', href: '/verify', icon: ShieldCheck },
   ]
 
   // 5 primary tabs for mobile bottom bar
@@ -190,6 +194,16 @@ export default function EditorialNavigation({
               <span className="hidden md:inline">{userName}</span>
             </Link>
 
+            <Link
+              href="/admin"
+              prefetch={true}
+              onClick={() => handleNavClick('/admin')}
+              className="hidden xl:inline-flex px-2 py-1.5 border-2 border-deepgreen bg-cream hover:bg-butter font-mono text-[10px] font-bold uppercase transition-colors shadow-[1px_1px_0px_#263F32] items-center gap-1 text-deepgreen"
+              title="Admin & Compliance Terminal"
+            >
+              <span>Admin ⚙</span>
+            </Link>
+
             <button
               onClick={() => signOutUser()}
               className="hidden sm:inline-flex p-1.5 border-2 border-deepgreen bg-cream hover:bg-tomato hover:text-cream transition-colors text-deepgreen shadow-[1px_1px_0px_#263F32]"
@@ -259,7 +273,7 @@ export default function EditorialNavigation({
               })}
             </div>
 
-            <div className="pt-2 border-t border-deepgreen/20 flex items-center justify-between font-mono text-xs">
+            <div className="pt-2 border-t border-deepgreen/20 flex flex-wrap items-center justify-between gap-2 font-mono text-xs">
               <Link
                 href="/profile"
                 prefetch={true}
@@ -267,6 +281,14 @@ export default function EditorialNavigation({
                 className="text-deepgreen hover:text-tomato underline font-bold"
               >
                 My Dossier ({userName})
+              </Link>
+              <Link
+                href="/admin"
+                prefetch={true}
+                onClick={() => handleNavClick('/admin')}
+                className="text-tomato hover:underline font-bold"
+              >
+                Admin Desk ⚙
               </Link>
               <button
                 onClick={() => signOutUser()}
