@@ -59,10 +59,11 @@ export default function LoginPage() {
     setIsLoading(false)
 
     if (res.success) {
-      setSuccessMessage('Verified! Entering the YAARO Collective...')
+      const isAdmin = email.trim().toLowerCase() === 'admin@yaaro.live'
+      setSuccessMessage(isAdmin ? 'Admin authenticated! Entering Operator Command...' : 'Verified! Entering the YAARO Collective...')
       setTimeout(() => {
-        router.push('/dashboard')
-      }, 1000)
+        router.push(isAdmin ? '/admin' : '/dashboard')
+      }, 800)
     } else {
       setErrorMessage(res.error || 'Invalid code or expired magic link. Please check your inbox.')
     }
@@ -81,10 +82,11 @@ export default function LoginPage() {
     setIsLoading(false)
 
     if (res.success) {
-      setSuccessMessage('Signed in! Welcome back to YAARO.')
+      const isAdmin = email.trim().toLowerCase() === 'admin@yaaro.live'
+      setSuccessMessage(isAdmin ? 'Admin authenticated! Entering Operator Command...' : 'Signed in! Welcome back to YAARO.')
       setTimeout(() => {
-        router.push('/dashboard')
-      }, 1000)
+        router.push(isAdmin ? '/admin' : '/dashboard')
+      }, 800)
     } else {
       setErrorMessage(res.error || 'Invalid email or password.')
     }

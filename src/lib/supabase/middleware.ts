@@ -56,6 +56,14 @@ export async function updateSession(request: NextRequest) {
     ) {
       const { data: { user } } = await supabase.auth.getUser()
 
+      // When admin is logged in, restrict them strictly to /admin dashboard
+      if (user && user.email?.toLowerCase() === 'admin@yaaro.live') {
+        if (pathname !== '/admin' && (isProtectedRoute || isAuthRoute || pathname === '/' || pathname === '/matches' || pathname === '/pricing')) {
+          return NextResponse.redirect(new URL('/admin', request.url))
+        }
+        return supabaseResponse
+      }
+
       if (isProtectedRoute && !user) {
         const redirectUrl = new URL('/login', request.url)
         redirectUrl.searchParams.set('redirect', pathname)

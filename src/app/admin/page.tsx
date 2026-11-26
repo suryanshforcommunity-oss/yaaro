@@ -19,8 +19,9 @@ import {
   Lock,
   ArrowRight,
   TrendingUp,
+  LogOut,
 } from 'lucide-react'
-import EditorialNavigation from '@/components/EditorialNavigation'
+import { signOutUser } from '@/lib/auth'
 import {
   getAdminDashboardDataAction,
   adminReviewVerificationAction,
@@ -206,7 +207,39 @@ export default function AdminModerationPage() {
 
   return (
     <div className="min-h-screen bg-cream text-deepgreen font-serif antialiased selection:bg-tomato selection:text-white pb-24 lg:pb-16">
-      <EditorialNavigation />
+      {/* Dedicated Operator Navigation Bar - Strictly operator controls, NO resident consumer pages */}
+      <header className="sticky top-0 z-50 bg-deepgreen text-cream border-b-2 border-deepgreen shadow-[0px_2px_10px_rgba(0,0,0,0.15)]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-xl sm:text-2xl font-black uppercase font-serif tracking-tight text-cream">
+              YAARO<span className="text-tomato lowercase italic font-normal text-lg">.live</span>
+            </span>
+            <span className="font-mono text-[9px] uppercase tracking-widest px-2 py-0.5 bg-tomato text-cream font-bold border border-cream/20">
+              OPERATOR COMMAND
+            </span>
+          </div>
+
+          <div className="flex items-center gap-4 font-mono text-xs">
+            <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 bg-cream/10 border border-cream/20">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-cream text-[11px] font-bold">admin@yaaro.live</span>
+            </div>
+
+            <button
+              onClick={async () => {
+                if (typeof window !== 'undefined') {
+                  sessionStorage.removeItem('yaaro_admin_key')
+                }
+                await signOutUser()
+              }}
+              className="px-3 py-1.5 bg-tomato hover:bg-tomato-dark text-cream font-mono text-[11px] font-bold uppercase transition-colors border border-cream/30 shadow-[2px_2px_0px_#000] flex items-center gap-1.5 cursor-pointer"
+            >
+              <LogOut className="w-3 h-3" />
+              <span>Sign Out</span>
+            </button>
+          </div>
+        </div>
+      </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-8">
         {/* Top Header */}
