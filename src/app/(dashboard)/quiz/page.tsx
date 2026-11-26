@@ -80,7 +80,7 @@ const CATEGORIES: CategoryMeta[] = [
   {
     key: 'fun_compatibility',
     title: 'Fun Compatibility',
-    subtitle: 'Bengaluru Sundays, midnight snacks & coffee culture',
+    subtitle: 'City Sundays, midnight snacks & coffee culture',
     tag: '5 Questions',
     count: 5,
     icon: '☕',
@@ -130,6 +130,8 @@ export default function ChemistryQuizPage() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saved'>('idle')
   const [challengeSuccessMsg, setChallengeSuccessMsg] = useState<string | null>(null)
   const [challengesList, setChallengesList] = useState<any[]>([])
+  const [isQuizCompleted, setIsQuizCompleted] = useState<boolean>(false)
+  const [showRecalibrate, setShowRecalibrate] = useState<boolean>(false)
 
   const isMountedRef = useRef(true)
 
@@ -153,6 +155,9 @@ export default function ChemistryQuizPage() {
         const answers = await getUserQuizAnswers()
         if (!isCancelled && answers && Object.keys(answers).length > 0) {
           setUserAnswers((prev) => ({ ...prev, ...answers }))
+          if (Object.keys(answers).length >= 5) {
+            setIsQuizCompleted(true)
+          }
         }
 
         let initialTargetId = ''
@@ -399,8 +404,89 @@ export default function ChemistryQuizPage() {
               })}
             </div>
 
-            {/* Live Interactive Question Player + Radar Preview */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            {/* Calibrated Vibe Profile Summary (Displayed when user has already completed dilemmas) */}
+            {isQuizCompleted && !showRecalibrate ? (
+              <div className="bg-cream-light border-2 border-deepgreen p-6 sm:p-8 shadow-[8px_8px_0px_#263F32] space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-deepgreen/20 pb-4 gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-emerald-100 border-2 border-emerald-700 text-emerald-800 flex items-center justify-center font-bold text-lg shadow-[2px_2px_0px_#263F32]">
+                      ✓
+                    </div>
+                    <div>
+                      <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-emerald-700 block">
+                        CALIBRATION COMPLETE // RADAR IS ACTIVE
+                      </span>
+                      <h2 className="text-2xl sm:text-3xl font-black uppercase text-deepgreen font-serif">
+                        YOUR LIFESTYLE PROFILE IS LIVE
+                      </h2>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setShowRecalibrate(true)}
+                      className="px-3.5 py-2 border-2 border-deepgreen bg-cream hover:bg-butter font-mono text-xs font-bold text-deepgreen uppercase shadow-[2px_2px_0px_#263F32] transition-colors"
+                    >
+                      Recalibrate Answers ⚙
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-4 bg-deepgreen text-cream border-2 border-deepgreen shadow-[3px_3px_0px_#E95D43] space-y-1">
+                    <span className="font-mono text-[10px] uppercase text-butter font-bold">Archetype Badge</span>
+                    <h3 className="font-serif font-black text-lg text-cream">{liveArchetype}</h3>
+                    <p className="font-serif italic text-xs text-cream-light">Calculated from your domestic choices</p>
+                  </div>
+                  <div className="p-4 bg-cream border-2 border-deepgreen shadow-[3px_3px_0px_#263F32] space-y-1">
+                    <span className="font-mono text-[10px] uppercase text-tomato font-bold">Harmony Baseline</span>
+                    <h3 className="font-serif font-black text-2xl text-deepgreen">{liveHarmony}%</h3>
+                    <p className="font-serif italic text-xs text-deepgreen/70">Citywide compatibility rating</p>
+                  </div>
+                  <div className="p-4 bg-butter/40 border-2 border-deepgreen shadow-[3px_3px_0px_#263F32] space-y-1">
+                    <span className="font-mono text-[10px] uppercase text-deepgreen/70 font-bold">Dilemmas Answered</span>
+                    <h3 className="font-serif font-black text-2xl text-deepgreen">{answeredCount} of {totalQuestions}</h3>
+                    <p className="font-serif italic text-xs text-deepgreen/70">No need to retake unless routines change</p>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-cream border border-deepgreen/30 space-y-2">
+                  <span className="font-mono text-xs uppercase font-bold text-deepgreen block">
+                    Your Core Domestic Stances:
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-2.5 py-1 bg-deepgreen text-cream font-mono text-[11px] font-bold">
+                      Sleep: {userAnswers[1] === 'A' ? 'Early Bird' : userAnswers[1] === 'B' ? 'Night Owl' : 'Adaptive'}
+                    </span>
+                    <span className="px-2.5 py-1 bg-cream border border-deepgreen text-deepgreen font-mono text-[11px] font-bold">
+                      Dishes: {userAnswers[2] === 'A' ? 'Immediate Clean' : userAnswers[2] === 'B' ? 'Soak Overnight' : 'Maid Handled'}
+                    </span>
+                    <span className="px-2.5 py-1 bg-butter border border-deepgreen text-deepgreen font-mono text-[11px] font-bold">
+                      Kitchen: {userAnswers[3] === 'A' ? 'Home Cook' : userAnswers[3] === 'B' ? 'Shared Cook' : 'Swiggy/Zomato'}
+                    </span>
+                    <span className="px-2.5 py-1 bg-deepgreen text-cream font-mono text-[11px] font-bold">
+                      Living Room: {userAnswers[4] === 'A' ? 'Quiet Sanctuary' : userAnswers[4] === 'B' ? 'Social Hub' : 'Balanced'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
+                  <Link
+                    href="/discover"
+                    className="w-full sm:w-auto px-6 py-3.5 bg-tomato hover:bg-tomato-dark text-cream font-serif font-bold uppercase tracking-wider text-xs transition-colors border border-deepgreen shadow-[4px_4px_0px_#263F32] text-center"
+                  >
+                    Browse Compatible Flatmates in Discovery →
+                  </Link>
+                  <button
+                    onClick={() => setActiveMainTab('compare')}
+                    className="w-full sm:w-auto px-6 py-3.5 bg-cream hover:bg-butter text-deepgreen font-serif font-bold uppercase tracking-wider text-xs transition-colors border-2 border-deepgreen shadow-[4px_4px_0px_#263F32] text-center"
+                  >
+                    Compare Chemistry with Matches →
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Live Interactive Question Player + Radar Preview */
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
               {/* Question Player (7 Cols) */}
               <div className="lg:col-span-7 bg-cream-light border-2 border-deepgreen p-6 sm:p-8 shadow-[8px_8px_0px_#263F32] relative">
                 {/* Header within card */}
@@ -625,16 +711,25 @@ export default function ChemistryQuizPage() {
                   </div>
                 </div>
 
-                <div className="pt-2">
+                <div className="pt-2 space-y-2">
                   <button
                     onClick={() => setActiveMainTab('compare')}
                     className="w-full py-3 bg-tomato hover:bg-butter hover:text-deepgreen text-white font-serif font-bold uppercase tracking-wider text-xs transition-colors shadow-[3px_3px_0px_#263F32]"
                   >
                     Compare Against Flatmates →
                   </button>
+                  {showRecalibrate && (
+                    <button
+                      onClick={() => setShowRecalibrate(false)}
+                      className="w-full py-2 bg-cream/10 hover:bg-cream/20 text-cream font-mono text-[11px] font-bold uppercase transition-colors border border-cream/30"
+                    >
+                      Done Recalibrating — Save & Return
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
+            )}
           </div>
         )}
 

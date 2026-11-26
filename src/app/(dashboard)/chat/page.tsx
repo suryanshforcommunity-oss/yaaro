@@ -146,8 +146,6 @@ function ChatContent() {
         const msgs = await getConversationMessages(activeThreadId)
         if (isMounted) {
           setMessages(msgs)
-          // Mark conversation as read
-          await markConversationAsRead(activeThreadId)
         }
       } catch (err) {
         console.error('Error loading messages for thread:', err)
@@ -155,6 +153,8 @@ function ChatContent() {
     }
 
     loadMessages()
+    // Mark conversation read once when opening thread
+    markConversationAsRead(activeThreadId).catch(() => {})
 
     // 1. Supabase Realtime channel subscription
     const supabase = createClient()
@@ -179,10 +179,10 @@ function ChatContent() {
       )
       .subscribe()
 
-    // 2. High-reliability fallback polling interval (3s)
+    // 2. High-reliability fallback polling interval (25s background sync, avoiding UI lag)
     const interval = setInterval(() => {
       loadMessages()
-    }, 3000)
+    }, 25000)
 
     return () => {
       isMounted = false
@@ -407,13 +407,13 @@ function ChatContent() {
           )
         }
 
-        // Roommate Profile Share Card
+        // Flatmate Candidate Profile Share Card
         if (parsed.type === 'profile_share' && parsed.profile) {
           const p = parsed.profile
           return (
             <div className="border-2 border-deepgreen bg-cream p-4 shadow-[3px_3px_0px_#263F32] my-1 max-w-sm text-left space-y-2">
               <span className="font-mono text-[9px] uppercase tracking-wider text-tomato font-bold block">
-                SHARED ROOMMATE PROFILE
+                PROSPECTIVE FLATMATE DOSSIER
               </span>
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 border border-deepgreen bg-sand overflow-hidden shrink-0 shadow-[1px_1px_0px_#263F32]">
@@ -726,7 +726,7 @@ function ChatContent() {
                         className="w-full text-left px-3 py-2 hover:bg-red-50 text-red-700 flex items-center gap-2"
                       >
                         <UserX className="h-3.5 w-3.5" />
-                        <span>Unmatch Flatmate</span>
+                        <span>Unmatch Candidate</span>
                       </button>
                       <button
                         onClick={() => {

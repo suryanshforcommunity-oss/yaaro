@@ -15,12 +15,30 @@ export interface AdminMetrics {
   estimatedMRR: number
 }
 
-export async function getAdminDashboardDataAction() {
+const ADMIN_EMAIL = process.env.YAARO_ADMIN_EMAIL || 'admin@yaaro.live'
+const ADMIN_SECRET_KEY = process.env.YAARO_ADMIN_SECRET || 'YaaroAdmin#2026!MasterKey'
+
+export async function verifyAdminPasskeyAction(passkey: string) {
+  if (passkey === ADMIN_SECRET_KEY) {
+    return { success: true }
+  }
+  return { success: false, message: 'Invalid administrative security key.' }
+}
+
+async function isAuthorizedAdmin(user: any, passkey?: string): Promise<boolean> {
+  if (passkey && passkey === ADMIN_SECRET_KEY) return true
+  if (user && user.email && user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) return true
+  return false
+}
+
+export async function getAdminDashboardDataAction(adminKey?: string) {
   try {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      return { success: false, message: 'Unauthorized' }
+
+    const authorized = await isAuthorizedAdmin(user, adminKey)
+    if (!authorized) {
+      return { success: false, message: 'Access denied: Restricted administrative terminal.' }
     }
 
     const admin = createAdminClient()
@@ -36,7 +54,7 @@ export async function getAdminDashboardDataAction() {
       { data: activeSubs },
     ] = await Promise.all([
       db.from('profiles').select('id', { count: 'exact', head: true }),
-      db.from('profiles').select('id', { count: 'exact', head: true }).eq('verification_tier', 'id_verified'),
+      db.from('profiles').select('id', { count: 'exact', head: true }).in('verification_tier', ['verified', 'id_verified']),
       db.from('verification_records').select('id', { count: 'exact', head: true }).eq('verification_status', 'pending'),
       db.from('room_listings').select('id', { count: 'exact', head: true }).eq('status', 'active'),
       db.from('reports_and_blocks').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
@@ -71,20 +89,22 @@ export async function getAdminDashboardDataAction() {
       .order('submitted_at', { ascending: false })
       .limit(20)
 
-    // Enrich verifications with user names
+    // Enrich verifications with user profile data
     const enrichedVerifications = await Promise.all(
       (verifications || []).map(async (v: any) => {
-        const { data: p } = await db.from('profiles').select('full_name, email, city').eq('id', v.user_id).maybeSingle()
+        const { data: p } = await db
+          .from('profiles')
+          .select('full_name, email, city, occupation')
+          .eq('id', v.user_id)
+          .maybeSingle()
         return {
           ...v,
-          userName: p?.full_name || 'Anonymous User',
-          userEmail: p?.email || 'N/A',
-          city: p?.city || 'Pune',
+          user: p || { full_name: 'Resident Member', email: 'N/A' },
         }
       })
     )
 
-    // 3. Fetch Reports
+    // 3. Fetch Reports and Blocks
     const { data: reports } = await db
       .from('reports_and_blocks')
       .select('*')
@@ -155,18 +175,38 @@ export async function getAdminDashboardDataAction() {
   }
 }
 
-export async function adminReviewVerificationAction(recordId: string, status: 'approved' | 'rejected', notes?: string) {
+export async function adminReviewVerificationAction(recordId: string, status: 'approved' | 'rejected', notes?: string, adminKey?: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!await isAuthorizedAdmin(user, adminKey)) {
+    return { success: false, message: 'Unauthorized' }
+  }
   return await reviewVerificationRecord(recordId, status, notes)
 }
 
-export async function adminResolveReportAction(reportId: string, resolution: 'action_taken' | 'dismissed', notes?: string) {
+export async function adminResolveReportAction(reportId: string, resolution: 'action_taken' | 'dismissed', notes?: string, adminKey?: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!await isAuthorizedAdmin(user, adminKey)) {
+    return { success: false, message: 'Unauthorized' }
+  }
   return await resolveReportAction(reportId, resolution, notes)
 }
 
-export async function adminBanUserAction(userId: string, reason: string) {
+export async function adminBanUserAction(userId: string, reason: string, adminKey?: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!await isAuthorizedAdmin(user, adminKey)) {
+    return { success: false, message: 'Unauthorized' }
+  }
   return await banUserAction(userId, reason)
 }
 
-export async function adminModerateListingAction(listingId: string, newStatus: 'active' | 'paused' | 'archived' | 'flagged') {
+export async function adminModerateListingAction(listingId: string, newStatus: 'active' | 'paused' | 'archived' | 'flagged', adminKey?: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!await isAuthorizedAdmin(user, adminKey)) {
+    return { success: false, message: 'Unauthorized' }
+  }
   return await moderateListingAction(listingId, newStatus)
 }

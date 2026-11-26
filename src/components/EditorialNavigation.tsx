@@ -46,6 +46,7 @@ export default function EditorialNavigation({
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false)
   const [isNavigating, setIsNavigating] = useState<boolean>(false)
+  const [isVerified, setIsVerified] = useState<boolean>(false)
 
   // Reset navigation indicator and close mobile menu whenever pathname updates
   useEffect(() => {
@@ -64,9 +65,12 @@ export default function EditorialNavigation({
         if (authUser) {
           setIsAuthenticated(true)
           const { data: profile } = await (supabase.from('profiles') as any)
-            .select('full_name, city')
+            .select('full_name, city, verification_tier')
             .eq('id', authUser.id)
             .maybeSingle()
+
+          const isUserVerified = (profile as any)?.verification_tier === 'verified' || (profile as any)?.verification_tier === 'id_verified'
+          setIsVerified(isUserVerified)
 
           const resolvedName =
             (profile as any)?.full_name ||
@@ -104,7 +108,7 @@ export default function EditorialNavigation({
     { label: 'Chat', href: '/chat', icon: MessageSquare },
     { label: 'Split Ledger', href: '/expenses', icon: Receipt },
     { label: 'Club Pro', href: '/pricing', icon: Award },
-    { label: 'Verify', href: '/verify', icon: ShieldCheck },
+    { label: isVerified ? '✓ Verified' : 'Verify', href: '/verify', icon: ShieldCheck },
   ]
 
   // 5 primary tabs for mobile bottom bar
@@ -203,16 +207,11 @@ export default function EditorialNavigation({
             >
               <User className="h-3.5 w-3.5 text-tomato" />
               <span className="hidden md:inline">{userName}</span>
-            </Link>
-
-            <Link
-              href="/admin"
-              prefetch={true}
-              onClick={() => handleNavClick('/admin')}
-              className="hidden xl:inline-flex px-2 py-1.5 border-2 border-deepgreen bg-cream hover:bg-butter font-mono text-[10px] font-bold uppercase transition-colors shadow-[1px_1px_0px_#263F32] items-center gap-1 text-deepgreen"
-              title="Admin & Compliance Terminal"
-            >
-              <span>Admin ⚙</span>
+              {isVerified && (
+                <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-500 px-1 py-0.2 font-mono font-bold">
+                  ✓
+                </span>
+              )}
             </Link>
 
             <button
@@ -304,14 +303,6 @@ export default function EditorialNavigation({
                 className="text-deepgreen hover:text-tomato underline font-bold"
               >
                 My Dossier ({userName})
-              </Link>
-              <Link
-                href="/admin"
-                prefetch={true}
-                onClick={() => handleNavClick('/admin')}
-                className="text-tomato hover:underline font-bold"
-              >
-                Admin Desk ⚙
               </Link>
               <button
                 onClick={() => signOutUser()}

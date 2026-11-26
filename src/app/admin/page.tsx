@@ -27,6 +27,7 @@ import {
   adminResolveReportAction,
   adminBanUserAction,
   adminModerateListingAction,
+  verifyAdminPasskeyAction,
   type AdminMetrics,
 } from './actions'
 
@@ -44,14 +45,22 @@ export default function AdminModerationPage() {
   const [actionMsg, setActionMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
   const [searchFilter, setSearchFilter] = useState<string>('')
 
+  // Terminal Security Access
+  const [adminKey, setAdminKey] = useState<string>('')
+  const [isUnlocked, setIsUnlocked] = useState<boolean>(false)
+  const [keyInput, setKeyInput] = useState<string>('')
+  const [authError, setAuthError] = useState<string | null>(null)
+
   // Reject / Note Modal
   const [rejectionModal, setRejectionModal] = useState<{ id: string; target: 'verification' | 'ban'; title: string } | null>(null)
   const [adminNoteInput, setAdminNoteInput] = useState<string>('')
 
-  const refreshData = async () => {
+  const refreshData = async (activeKey?: string) => {
     setLoading(true)
-    const res = await getAdminDashboardDataAction()
+    const keyToUse = activeKey !== undefined ? activeKey : adminKey
+    const res = await getAdminDashboardDataAction(keyToUse)
     if (res.success) {
+      setIsUnlocked(true)
       if (res.metrics) setMetrics(res.metrics)
       setVerifications(res.verifications || [])
       setReports(res.reports || [])
@@ -59,17 +68,45 @@ export default function AdminModerationPage() {
       setUsers(res.users || [])
       setSubscriptions(res.subscriptions || [])
     } else {
-      setActionMsg({ text: res.message || 'Failed to load admin records.', type: 'error' })
+      if (res.message?.includes('Access denied') || res.message?.includes('Unauthorized')) {
+        setIsUnlocked(false)
+      } else {
+        setActionMsg({ text: res.message || 'Failed to load admin records.', type: 'error' })
+      }
     }
     setLoading(false)
   }
 
   useEffect(() => {
-    refreshData()
+    // Check session storage for saved admin key
+    const saved = typeof window !== 'undefined' ? sessionStorage.getItem('yaaro_admin_key') : null
+    if (saved) {
+      setAdminKey(saved)
+      refreshData(saved)
+    } else {
+      refreshData()
+    }
   }, [])
 
+  const handleUnlockTerminal = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setAuthError(null)
+    const res = await verifyAdminPasskeyAction(keyInput.trim())
+    if (res.success) {
+      const validKey = keyInput.trim()
+      setAdminKey(validKey)
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('yaaro_admin_key', validKey)
+      }
+      setIsUnlocked(true)
+      await refreshData(validKey)
+    } else {
+      setAuthError(res.message || 'Invalid administrative security key.')
+    }
+  }
+
   const handleReviewVerification = async (recordId: string, status: 'approved' | 'rejected', notes?: string) => {
-    const res = await adminReviewVerificationAction(recordId, status, notes)
+    const res = await adminReviewVerificationAction(recordId, status, notes, adminKey)
     if (res.success) {
       setActionMsg({ text: res.message, type: 'success' })
       setRejectionModal(null)
@@ -81,7 +118,7 @@ export default function AdminModerationPage() {
   }
 
   const handleResolveReport = async (reportId: string, resolution: 'action_taken' | 'dismissed') => {
-    const res = await adminResolveReportAction(reportId, resolution)
+    const res = await adminResolveReportAction(reportId, resolution, undefined, adminKey)
     if (res.success) {
       setActionMsg({ text: res.message, type: 'success' })
       refreshData()
@@ -91,7 +128,7 @@ export default function AdminModerationPage() {
   }
 
   const handleModerateListing = async (listingId: string, status: 'active' | 'paused' | 'flagged') => {
-    const res = await adminModerateListingAction(listingId, status)
+    const res = await adminModerateListingAction(listingId, status, adminKey)
     if (res.success) {
       setActionMsg({ text: res.message, type: 'success' })
       refreshData()
@@ -101,7 +138,7 @@ export default function AdminModerationPage() {
   }
 
   const handleBanUser = async (userId: string, reason: string) => {
-    const res = await adminBanUserAction(userId, reason)
+    const res = await adminBanUserAction(userId, reason, adminKey)
     if (res.success) {
       setActionMsg({ text: res.message, type: 'success' })
       setRejectionModal(null)
@@ -110,6 +147,61 @@ export default function AdminModerationPage() {
     } else {
       setActionMsg({ text: res.message, type: 'error' })
     }
+  }
+
+  // If locked, render the secret passkey gate
+  if (!isUnlocked && !loading) {
+    return (
+      <div className="min-h-screen bg-cream text-deepgreen font-serif antialiased flex flex-col justify-between p-4 sm:p-8">
+        <div className="max-w-md mx-auto w-full my-auto py-12">
+          <div className="border-2 border-deepgreen bg-cream-light p-6 sm:p-8 shadow-[8px_8px_0px_#263F32] space-y-6">
+            <div className="flex items-center justify-between border-b border-deepgreen/20 pb-3">
+              <span className="font-mono text-[10px] uppercase font-bold tracking-widest text-tomato">
+                RESTRICTED // OPERATOR TERMINAL
+              </span>
+              <Lock className="w-4 h-4 text-tomato" />
+            </div>
+
+            <h2 className="text-2xl sm:text-3xl font-black uppercase text-deepgreen leading-tight">
+              ADMINISTRATION &amp; COMPLIANCE
+            </h2>
+
+            <p className="font-serif italic text-xs text-deepgreen/80">
+              This terminal is strictly for platform operators and compliance moderators. Please provide the administrative master key to proceed.
+            </p>
+
+            {authError && (
+              <div className="p-3 bg-red-50 border border-red-500 text-red-800 font-mono text-xs font-bold">
+                {authError}
+              </div>
+            )}
+
+            <form onSubmit={handleUnlockTerminal} className="space-y-4">
+              <div>
+                <label className="block font-mono text-[11px] uppercase font-bold text-deepgreen mb-1">
+                  ADMIN MASTER KEY
+                </label>
+                <input
+                  type="password"
+                  value={keyInput}
+                  onChange={(e) => setKeyInput(e.target.value)}
+                  placeholder="Enter secret passkey..."
+                  required
+                  className="w-full border-2 border-deepgreen bg-cream px-3 py-2 text-sm font-mono text-deepgreen focus:outline-none focus:border-tomato"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-3 bg-deepgreen hover:bg-tomato text-cream font-serif font-bold uppercase tracking-wider text-xs transition-colors shadow-[3px_3px_0px_#E95D43]"
+              >
+                Unlock Terminal Access →
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -132,7 +224,7 @@ export default function AdminModerationPage() {
 
           <div className="flex items-center gap-3">
             <button
-              onClick={refreshData}
+              onClick={() => refreshData()}
               disabled={loading}
               className="px-3.5 py-1.5 border-2 border-deepgreen bg-cream hover:bg-butter font-mono text-xs font-bold uppercase transition-colors shadow-[2px_2px_0px_#263F32] flex items-center gap-1.5 disabled:opacity-50"
             >

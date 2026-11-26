@@ -444,7 +444,7 @@ export default function VerificationCenterPage() {
                 href="/discover"
                 className="px-5 py-2.5 bg-deepgreen text-cream font-mono text-xs font-bold uppercase tracking-wider shadow-[2px_2px_0px_#E95D43] hover:bg-tomato transition-colors"
               >
-                Browse Roommates →
+                Browse Flatmates →
               </Link>
               <Link
                 href="/rooms"

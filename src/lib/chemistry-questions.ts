@@ -41,7 +41,7 @@ export const CHEMISTRY_QUESTIONS: ChemistryQuestion[] = [
       { key: 'B', text: 'Soak overnight: Wash before morning chai ritual.', score_weight: 24, vibe_tag: "Rhea's Rule ☕" },
       { key: 'C', text: 'Weekly deep sweep: Let maid handle vessels, weekend thorough reset.', score_weight: 20, vibe_tag: 'Weekly Reset 🧹' },
     ],
-    domestic_tip: '78% of Koramangala flatmate disputes start over unsoaked chai saucepans on the stove.',
+    domestic_tip: '78% of shared flatmate disputes start over unsoaked chai saucepans on the stove.',
   },
   {
     id: 'q-3',
@@ -92,7 +92,7 @@ export const CHEMISTRY_QUESTIONS: ChemistryQuestion[] = [
     question_text: 'When your social battery drains, how do you recharge?',
     options: [
       { key: 'A', text: 'Introvert: Door closed, noise-canceling headphones, solo reading/gaming.', score_weight: 25, vibe_tag: 'Introvert Sanctuary 🎧' },
-      { key: 'B', text: 'Extrovert: Conversing in the living room, heading out to Indiranagar.', score_weight: 25, vibe_tag: 'Extrovert Energy ⚡' },
+      { key: 'B', text: 'Extrovert: Conversing in the living room, heading out to vibrant cafes or social spots.', score_weight: 25, vibe_tag: 'Extrovert Energy ⚡' },
       { key: 'C', text: 'Ambivert: Love a good kitchen chat, then need 2 hours of quiet.', score_weight: 24, vibe_tag: 'Ambivert Vibe 🛋️' },
     ],
     domestic_tip: 'Knowing your roommate’s recharge style prevents misinterpreting quietness as friction.',
@@ -205,11 +205,11 @@ export const CHEMISTRY_QUESTIONS: ChemistryQuestion[] = [
     question_order: 15,
     category: 'social_lifestyle',
     game_category: 'fun_compatibility',
-    question_text: 'Ideal Sunday afternoon in Bengaluru:',
+    question_text: 'Your ideal Sunday afternoon in the city:',
     options: [
-      { key: 'A', text: 'Filter coffee & avocado toast at Third Wave, followed by book shopping at Blossom.', score_weight: 25, vibe_tag: 'Blossom & Brews 📖' },
+      { key: 'A', text: 'Specialty coffee & breakfast at a neighborhood cafe, followed by indie book shopping.', score_weight: 25, vibe_tag: 'Coffee & Books 📖' },
       { key: 'B', text: 'Sunday sleep-in until noon, gaming session, ordering biryani.', score_weight: 24, vibe_tag: 'Biryani & Binge 🍗' },
-      { key: 'C', text: 'Cubbon Park morning run, indoor plant shopping, cleaning the balcony.', score_weight: 25, vibe_tag: 'Cubbon & Plants 🌿' },
+      { key: 'C', text: 'Morning park run or workout, nursery plant shopping, cleaning the balcony.', score_weight: 25, vibe_tag: 'Morning Run & Plants 🌿' },
     ],
     domestic_tip: 'Complementary Sunday rhythms allow flatmates to either explore together or enjoy solo sanctuary.',
   },
@@ -233,7 +233,7 @@ export const CHEMISTRY_QUESTIONS: ChemistryQuestion[] = [
     game_category: 'fun_compatibility',
     question_text: 'Travel and weekend roadtrip philosophy:',
     options: [
-      { key: 'A', text: 'Spontaneous roadtrip to Coorg or Gokarna at 4 AM on Saturday.', score_weight: 25, vibe_tag: 'Western Ghats Roadtripper 🚙' },
+      { key: 'A', text: 'Spontaneous roadtrip to the hills or scenic highways at 4 AM on Saturday.', score_weight: 25, vibe_tag: 'Weekend Roadtripper 🚙' },
       { key: 'B', text: 'Staycation in the flat: iced tea on the balcony and uninterrupted reading.', score_weight: 24, vibe_tag: 'Balcony Staycation 🧊' },
     ],
     domestic_tip: 'Shared weekend wanderlust turns co-living flatmates into lifelong travel companions.',

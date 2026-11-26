@@ -41,7 +41,10 @@ export async function getUserVerificationState(userId: string): Promise<Verifica
 
     const latestRecord = records && records.length > 0 ? records[0] : null
 
-    const isVerifiedTier = profile?.verification_tier === 'verified' || profile?.verification_tier === 'premium'
+    const isVerifiedTier =
+      profile?.verification_tier === 'verified' ||
+      profile?.verification_tier === 'premium' ||
+      profile?.verification_tier === 'id_verified'
     const isApprovedRecord = latestRecord?.verification_status === 'approved'
     
     // Email is verified if profile has email and is marked verified or has approved record

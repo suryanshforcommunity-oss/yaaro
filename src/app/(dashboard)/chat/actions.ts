@@ -216,7 +216,7 @@ export async function getUserConversations(): Promise<ChatThreadItem[]> {
 
       let snippetText = c.last_message_preview || 'No messages yet.'
       if (snippetText.startsWith('{"type":"room_share"')) snippetText = '📍 Shared a verified room listing'
-      else if (snippetText.startsWith('{"type":"profile_share"')) snippetText = '👤 Shared a roommate profile'
+      else if (snippetText.startsWith('{"type":"profile_share"')) snippetText = '👤 Shared a flatmate dossier'
       else if (snippetText.startsWith('{"type":"compatibility_share"')) snippetText = '⚡ Shared chemistry breakdown'
 
       return {
@@ -381,7 +381,7 @@ export async function sendChatMessage(
     const nowIso = new Date().toISOString()
     let previewSnippet = trimmed.slice(0, 100)
     if (trimmed.startsWith('{"type":"room_share"')) previewSnippet = '📍 Shared a verified room listing'
-    else if (trimmed.startsWith('{"type":"profile_share"')) previewSnippet = '👤 Shared a roommate profile'
+    else if (trimmed.startsWith('{"type":"profile_share"')) previewSnippet = '👤 Shared a flatmate dossier'
     else if (trimmed.startsWith('{"type":"compatibility_share"')) previewSnippet = '⚡ Shared chemistry breakdown'
 
     await db
