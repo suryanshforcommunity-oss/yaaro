@@ -29,6 +29,7 @@ import {
   adminBanUserAction,
   adminModerateListingAction,
   verifyAdminPasskeyAction,
+  adminSetUserVerificationTierAction,
   type AdminMetrics,
 } from './actions'
 
@@ -103,6 +104,16 @@ export default function AdminModerationPage() {
       await refreshData(validKey)
     } else {
       setAuthError(res.message || 'Invalid administrative security key.')
+    }
+  }
+
+  const handleSetUserVerification = async (userId: string, tier: 'verified' | 'unverified' | 'suspended') => {
+    const res = await adminSetUserVerificationTierAction(userId, tier, adminKey)
+    if (res.success) {
+      setActionMsg({ text: res.message, type: 'success' })
+      refreshData()
+    } else {
+      setActionMsg({ text: res.message, type: 'error' })
     }
   }
 
@@ -368,9 +379,9 @@ export default function AdminModerationPage() {
         ===================================================================== */}
         {activeTab === 'verifications' && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between font-mono text-xs text-deepgreen/70">
-              <span>Showing submitted documents awaiting compliance authorization</span>
-              <span>Human Audit Policy Active</span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between font-mono text-xs text-deepgreen/70 gap-2 border-b border-deepgreen/20 pb-3">
+              <span>Showing submitted requests &amp; registered users awaiting verification</span>
+              <span className="font-bold text-tomato">1-Tap Verification Active</span>
             </div>
 
             {verifications.length === 0 ? (
@@ -382,36 +393,47 @@ export default function AdminModerationPage() {
                 {verifications.map((v) => {
                   const docUrl = (v.verified_data as any)?.document_url
                   const idMasked = (v.verified_data as any)?.id_masked
+                  const isApproved = v.verification_status === 'approved'
+
                   return (
                     <div
                       key={v.id}
                       className="border-2 border-deepgreen bg-cream-light p-4 sm:p-5 shadow-[4px_4px_0px_#263F32] flex flex-col md:flex-row md:items-center justify-between gap-4"
                     >
-                      <div className="space-y-1.5 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-serif font-black text-base uppercase text-deepgreen">
+                      <div className="space-y-2 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-serif font-black text-lg uppercase text-deepgreen">
                             {v.userName}
                           </span>
                           <span
                             className={`px-2 py-0.5 font-mono text-[9px] uppercase font-bold border ${
-                              v.verification_status === 'approved'
+                              isApproved
                                 ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                                 : v.verification_status === 'rejected'
                                 ? 'bg-tomato text-cream border-deepgreen'
                                 : 'bg-butter text-deepgreen border-deepgreen'
                             }`}
                           >
-                            {v.verification_status}
+                            {isApproved ? '✓ APPROVED' : v.verification_status === 'rejected' ? 'REJECTED' : 'PENDING APPROVAL'}
+                          </span>
+                          <span className="font-mono text-[10px] text-deepgreen/70 bg-cream px-2 py-0.5 border border-deepgreen/30 select-all font-bold">
+                            User ID: {v.userId}
                           </span>
                         </div>
-                        <div className="font-mono text-xs text-deepgreen/70 flex flex-wrap gap-2">
-                          <span>Email: {v.userEmail}</span>
+
+                        <div className="font-mono text-xs text-deepgreen/80 flex flex-wrap gap-2 items-center">
+                          <span className="font-bold text-deepgreen">Email: {v.userEmail}</span>
                           <span>•</span>
-                          <span>City: {v.city}</span>
+                          <span>📍 {v.city || 'Pune'}</span>
                           <span>•</span>
-                          <span className="capitalize font-bold text-deepgreen">Category: {v.verification_type.replace('_', ' ')}</span>
+                          <span className="bg-cream px-1.5 py-0.2 border border-deepgreen/20 font-bold text-tomato uppercase text-[10px]">
+                            {v.verification_type}
+                          </span>
                           {idMasked && <span>(Ref: {idMasked})</span>}
+                          <span>•</span>
+                          <span>Requested: {new Date(v.submitted_at).toLocaleDateString()}</span>
                         </div>
+
                         {docUrl && (
                           <div className="pt-1">
                             <a
@@ -428,19 +450,27 @@ export default function AdminModerationPage() {
                       </div>
 
                       {/* Admin Actions */}
-                      <div className="flex items-center gap-2 shrink-0">
-                        {v.verification_status !== 'approved' && (
+                      <div className="flex items-center gap-2 shrink-0 font-mono text-xs">
+                        {!isApproved && (
                           <button
-                            onClick={() => handleReviewVerification(v.id, 'approved')}
-                            className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-cream font-mono text-xs font-bold uppercase transition-colors shadow-[2px_2px_0px_#263F32]"
+                            onClick={() => handleSetUserVerification(v.userId, 'verified')}
+                            className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-cream font-bold uppercase transition-colors shadow-[2px_2px_0px_#263F32]"
                           >
-                            Approve ✓
+                            Approve &amp; Verify User ✓
+                          </button>
+                        )}
+                        {isApproved && (
+                          <button
+                            onClick={() => handleSetUserVerification(v.userId, 'unverified')}
+                            className="px-3 py-1.5 border border-deepgreen bg-cream hover:bg-butter text-deepgreen font-bold uppercase"
+                          >
+                            Revoke
                           </button>
                         )}
                         {v.verification_status !== 'rejected' && (
                           <button
-                            onClick={() => setRejectionModal({ id: v.id, target: 'verification', title: `Reject Verification for ${v.userName}` })}
-                            className="px-3.5 py-1.5 bg-tomato hover:bg-tomato-dark text-cream font-mono text-xs font-bold uppercase transition-colors shadow-[2px_2px_0px_#263F32]"
+                            onClick={() => setRejectionModal({ id: v.userId, target: 'verification', title: `Reject Verification for ${v.userName}` })}
+                            className="px-3 py-1.5 bg-tomato hover:bg-tomato-dark text-cream font-bold uppercase transition-colors shadow-[2px_2px_0px_#263F32]"
                           >
                             Reject ✕
                           </button>
@@ -602,48 +632,118 @@ export default function AdminModerationPage() {
         ===================================================================== */}
         {activeTab === 'users' && (
           <div className="space-y-4">
-            <div className="space-y-3">
-              {users.map((u) => (
-                <div
-                  key={u.id}
-                  className="border-2 border-deepgreen bg-cream-light p-4 shadow-[4px_4px_0px_#263F32] flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-                >
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-serif font-black uppercase text-base text-deepgreen">
-                        {u.full_name || 'Anonymous User'}
-                      </span>
-                      <span
-                        className={`px-2 py-0.5 font-mono text-[9px] uppercase font-bold border ${
-                          u.verification_tier === 'id_verified'
-                            ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                            : u.verification_tier === 'suspended'
-                            ? 'bg-tomato text-cream border-deepgreen'
-                            : 'bg-cream text-deepgreen border-deepgreen/40'
-                        }`}
-                      >
-                        {u.verification_tier || 'unverified'}
-                      </span>
-                    </div>
-                    <p className="font-mono text-xs text-deepgreen/70">
-                      {u.email} • 📍 {u.city || 'Pune'} • {u.occupation || 'Member'}
-                    </p>
-                  </div>
+            {/* Search Filter Box */}
+            <div className="flex items-center gap-3 border-2 border-deepgreen bg-cream p-3 shadow-[3px_3px_0px_#263F32]">
+              <Search className="w-4 h-4 text-deepgreen/50" />
+              <input
+                type="text"
+                placeholder="Search registered members by Name, Email, or User ID..."
+                value={searchFilter}
+                onChange={(e) => setSearchFilter(e.target.value)}
+                className="w-full bg-transparent font-mono text-xs text-deepgreen placeholder:text-deepgreen/40 focus:outline-none"
+              />
+              {searchFilter && (
+                <button onClick={() => setSearchFilter('')} className="font-mono text-xs text-tomato font-bold underline">
+                  Clear
+                </button>
+              )}
+            </div>
 
-                  <div className="flex items-center gap-2 shrink-0 font-mono text-xs">
-                    {u.verification_tier === 'suspended' ? (
-                      <span className="text-tomato font-bold uppercase">Account Suspended</span>
-                    ) : (
-                      <button
-                        onClick={() => setRejectionModal({ id: u.id, target: 'ban', title: `Suspend ${u.full_name}` })}
-                        className="px-3 py-1.5 border border-deepgreen bg-cream hover:bg-tomato hover:text-cream text-deepgreen font-bold uppercase transition-colors"
-                      >
-                        Suspend User
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
+            <div className="space-y-3">
+              {users
+                .filter((u) => {
+                  if (!searchFilter.trim()) return true
+                  const q = searchFilter.toLowerCase()
+                  return (
+                    u.full_name?.toLowerCase().includes(q) ||
+                    u.email?.toLowerCase().includes(q) ||
+                    u.id?.toLowerCase().includes(q) ||
+                    u.city?.toLowerCase().includes(q)
+                  )
+                })
+                .map((u) => {
+                  const isVerified = u.verification_tier === 'verified' || u.verification_tier === 'id_verified'
+                  const isSuspended = u.verification_tier === 'suspended'
+
+                  return (
+                    <div
+                      key={u.id}
+                      className="border-2 border-deepgreen bg-cream-light p-4 shadow-[4px_4px_0px_#263F32] flex flex-col md:flex-row md:items-center justify-between gap-4"
+                    >
+                      <div className="space-y-2 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-serif font-black uppercase text-base text-deepgreen">
+                            {u.full_name || 'Anonymous User'}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 font-mono text-[9px] uppercase font-bold border ${
+                              isVerified
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-400'
+                                : isSuspended
+                                ? 'bg-tomato text-cream border-deepgreen'
+                                : 'bg-butter text-deepgreen border-deepgreen/40'
+                            }`}
+                          >
+                            {isVerified ? '✓ VERIFIED RESIDENT' : isSuspended ? 'SUSPENDED' : 'PENDING VERIFICATION'}
+                          </span>
+                          {u.email_confirmed && (
+                            <span className="px-1.5 py-0.2 bg-emerald-50 text-emerald-700 font-mono text-[8px] font-bold border border-emerald-300">
+                              EMAIL CONFIRMED
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="font-mono text-xs text-deepgreen/80 flex flex-wrap gap-2 items-center">
+                          <span className="font-bold text-deepgreen">{u.email}</span>
+                          <span>•</span>
+                          <span className="bg-cream px-2 py-0.5 border border-deepgreen/30 font-mono text-[10px] select-all font-bold">
+                            ID: {u.id}
+                          </span>
+                          <span>•</span>
+                          <span>📍 {u.city || 'Pune'}</span>
+                          <span>•</span>
+                          <span>{u.occupation || 'Member'}</span>
+                          <span>•</span>
+                          <span>Registered: {u.created_at ? new Date(u.created_at).toLocaleDateString() : 'Recent'}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 shrink-0 font-mono text-xs">
+                        {!isVerified && !isSuspended && (
+                          <button
+                            onClick={() => handleSetUserVerification(u.id, 'verified')}
+                            className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-cream font-bold uppercase transition-colors shadow-[2px_2px_0px_#263F32]"
+                          >
+                            Verify User ✓
+                          </button>
+                        )}
+                        {isVerified && (
+                          <button
+                            onClick={() => handleSetUserVerification(u.id, 'unverified')}
+                            className="px-2.5 py-1.5 border border-deepgreen bg-cream text-deepgreen hover:bg-butter font-bold uppercase"
+                          >
+                            Revoke Verification
+                          </button>
+                        )}
+                        {!isSuspended ? (
+                          <button
+                            onClick={() => setRejectionModal({ id: u.id, target: 'ban', title: `Suspend ${u.full_name}` })}
+                            className="px-2.5 py-1.5 border border-tomato text-tomato bg-cream hover:bg-tomato hover:text-cream font-bold uppercase transition-colors"
+                          >
+                            Suspend User
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleSetUserVerification(u.id, 'unverified')}
+                            className="px-2.5 py-1.5 bg-deepgreen text-cream font-bold uppercase"
+                          >
+                            Reactivate User
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
             </div>
           </div>
         )}

@@ -44,23 +44,88 @@ export async function getAdminDashboardDataAction(adminKey?: string) {
     const admin = createAdminClient()
     const db: any = admin
 
-    // 1. Fetch Key Metrics
+    // 1. Fetch Auth Users & Profiles in Parallel
     const [
-      { count: totalUsers },
-      { count: verifiedUsers },
-      { count: pendingVerifications },
+      { data: authUsersResult },
+      { data: allProfiles },
       { count: activeListings },
       { count: openReports },
       { data: activeSubs },
+      { data: verifications },
     ] = await Promise.all([
-      db.from('profiles').select('id', { count: 'exact', head: true }),
-      db.from('profiles').select('id', { count: 'exact', head: true }).in('verification_tier', ['verified', 'id_verified']),
-      db.from('verification_records').select('id', { count: 'exact', head: true }).eq('verification_status', 'pending'),
+      admin.auth.admin.listUsers({ perPage: 100 }),
+      db.from('profiles').select('*'),
       db.from('room_listings').select('id', { count: 'exact', head: true }).eq('status', 'active'),
       db.from('reports_and_blocks').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
       db.from('subscriptions').select('plan_tier, billing_cycle').eq('is_active', true),
+      db.from('verification_records').select('*').order('submitted_at', { ascending: false }).limit(50),
     ])
 
+    const authUsers = authUsersResult?.users || []
+    const profileMap = new Map((allProfiles || []).map((p: any) => [p.id, p]))
+
+    // 2. Build Unified User List with Names, IDs, Emails & Verification Tiers
+    const users = authUsers.map((u: any) => {
+      const p: any = profileMap.get(u.id)
+      const tier = p?.verification_tier || 'unverified'
+      const status = p?.verification_status || (tier === 'verified' || tier === 'id_verified' ? 'approved' : 'pending')
+      const name = p?.full_name || u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split('@')[0] || 'Resident Member'
+
+      return {
+        id: u.id,
+        email: u.email || 'N/A',
+        full_name: name,
+        city: p?.city || 'Pune',
+        occupation: p?.occupation || 'Member',
+        verification_tier: tier,
+        verification_status: status,
+        created_at: u.created_at || p?.created_at,
+        email_confirmed: Boolean(u.email_confirmed_at),
+        phone: p?.phone || u.phone || null,
+      }
+    })
+
+    // 3. Build Unified Verification Queue (Formal Records + Pending User Requests)
+    const recordsEnriched = (verifications || []).map((v: any) => {
+      const u = authUsers.find((au: any) => au.id === v.user_id)
+      const p: any = profileMap.get(v.user_id)
+      return {
+        id: v.id,
+        userId: v.user_id,
+        userName: p?.full_name || u?.user_metadata?.full_name || 'Resident Member',
+        userEmail: u?.email || 'N/A',
+        city: p?.city || 'Pune',
+        verification_type: v.verification_type || 'Email Identity Anchor',
+        verification_status: v.verification_status || 'pending',
+        verified_data: v.verified_data || {},
+        submitted_at: v.submitted_at || v.created_at || new Date().toISOString(),
+      }
+    })
+
+    // Include pending users who have not yet been approved as verified
+    const pendingUserRequests = users
+      .filter((u: any) => 
+        u.verification_tier !== 'verified' && 
+        u.verification_tier !== 'id_verified' && 
+        u.verification_tier !== 'suspended' &&
+        u.email !== 'admin@yaaro.live' &&
+        !recordsEnriched.some((r: any) => r.userId === u.id)
+      )
+      .map((u: any) => ({
+        id: `usr_ver_${u.id}`,
+        userId: u.id,
+        userName: u.full_name,
+        userEmail: u.email,
+        city: u.city,
+        verification_type: 'Email & Resident Profile Request',
+        verification_status: u.verification_status || 'pending',
+        verified_data: {},
+        submitted_at: u.created_at,
+      }))
+
+    const combinedVerifications = [...recordsEnriched, ...pendingUserRequests]
+
+    // 4. Calculate Key Metrics
     let estimatedMRR = 0
     if (activeSubs) {
       activeSubs.forEach((s: any) => {
@@ -72,46 +137,26 @@ export async function getAdminDashboardDataAction(adminKey?: string) {
       })
     }
 
+    const verifiedCount = users.filter((u: any) => u.verification_tier === 'verified' || u.verification_tier === 'id_verified').length
+    const pendingCount = combinedVerifications.filter((v: any) => v.verification_status !== 'approved').length
+
     const metrics: AdminMetrics = {
-      totalUsers: totalUsers || 0,
-      verifiedUsers: verifiedUsers || 0,
-      pendingVerifications: pendingVerifications || 0,
+      totalUsers: users.length,
+      verifiedUsers: verifiedCount,
+      pendingVerifications: pendingCount,
       activeListings: activeListings || 0,
       openReports: openReports || 0,
       activeSubscriptions: activeSubs?.length || 0,
       estimatedMRR,
     }
 
-    // 2. Fetch Pending Verification Records
-    const { data: verifications } = await db
-      .from('verification_records')
-      .select('id, user_id, verification_type, verification_status, verified_data, submitted_at')
-      .order('submitted_at', { ascending: false })
-      .limit(20)
-
-    // Enrich verifications with user profile data
-    const enrichedVerifications = await Promise.all(
-      (verifications || []).map(async (v: any) => {
-        const { data: p } = await db
-          .from('profiles')
-          .select('full_name, email, city, occupation')
-          .eq('id', v.user_id)
-          .maybeSingle()
-        return {
-          ...v,
-          user: p || { full_name: 'Resident Member', email: 'N/A' },
-        }
-      })
-    )
-
-    // 3. Fetch Reports and Blocks
+    // 5. Fetch Reports & Moderation Data
     const { data: reports } = await db
       .from('reports_and_blocks')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(20)
 
-    // Enrich reports with reporter & target user profiles
     const enrichedReports = await Promise.all(
       (reports || []).map(async (r: any) => {
         const [rep, tgt, lst] = await Promise.all([
@@ -128,21 +173,14 @@ export async function getAdminDashboardDataAction(adminKey?: string) {
       })
     )
 
-    // 4. Fetch Room Listings for Moderation
+    // 6. Fetch Room Listings for Moderation
     const { data: listings } = await db
       .from('room_listings')
       .select('id, owner_id, title, city, rent_monthly, security_deposit, status, created_at')
       .order('created_at', { ascending: false })
-      .limit(20)
-
-    // 5. Fetch Users for Management
-    const { data: users } = await db
-      .from('profiles')
-      .select('id, full_name, email, city, occupation, verification_tier, created_at')
-      .order('created_at', { ascending: false })
       .limit(30)
 
-    // 6. Fetch Subscriptions List
+    // 7. Fetch Subscriptions List
     const { data: subscriptionsList } = await db
       .from('subscriptions')
       .select('*')
@@ -151,11 +189,12 @@ export async function getAdminDashboardDataAction(adminKey?: string) {
 
     const enrichedSubscriptions = await Promise.all(
       (subscriptionsList || []).map(async (s: any) => {
-        const { data: p } = await db.from('profiles').select('full_name, email').eq('id', s.user_id).maybeSingle()
+        const u = authUsers.find((au: any) => au.id === s.user_id)
+        const p: any = profileMap.get(s.user_id)
         return {
           ...s,
-          userName: p?.full_name || 'Subscriber',
-          userEmail: p?.email || 'N/A',
+          userName: p?.full_name || u?.user_metadata?.full_name || 'Subscriber',
+          userEmail: u?.email || 'N/A',
         }
       })
     )
@@ -163,16 +202,58 @@ export async function getAdminDashboardDataAction(adminKey?: string) {
     return {
       success: true,
       metrics,
-      verifications: enrichedVerifications,
+      verifications: combinedVerifications,
       reports: enrichedReports,
       listings: listings || [],
-      users: users || [],
+      users,
       subscriptions: enrichedSubscriptions,
     }
   } catch (err: any) {
     console.error('Failed to load admin dashboard data:', err)
     return { success: false, message: err.message }
   }
+}
+
+export async function adminSetUserVerificationTierAction(
+  userId: string,
+  tier: 'verified' | 'unverified' | 'suspended',
+  adminKey?: string
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!await isAuthorizedAdmin(user, adminKey)) {
+    return { success: false, message: 'Unauthorized' }
+  }
+
+  const admin = createAdminClient()
+  const db: any = admin
+
+  const status = tier === 'verified' ? 'approved' : tier === 'suspended' ? 'rejected' : 'pending'
+
+  // Update profiles table
+  const { error } = await db
+    .from('profiles')
+    .update({
+      verification_tier: tier,
+      verification_status: status,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', userId)
+
+  if (error) {
+    return { success: false, message: error.message }
+  }
+
+  // Update or insert verification record audit trail
+  await db.from('verification_records').upsert({
+    user_id: userId,
+    verification_type: 'email_identity',
+    verification_status: status,
+    reviewed_at: new Date().toISOString(),
+    verified_data: { admin_action: `Admin marked tier as ${tier}` },
+  })
+
+  return { success: true, message: `Successfully updated user verification to ${tier.toUpperCase()}` }
 }
 
 export async function adminReviewVerificationAction(recordId: string, status: 'approved' | 'rejected', notes?: string, adminKey?: string) {
