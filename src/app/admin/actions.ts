@@ -68,7 +68,7 @@ export async function getAdminDashboardDataAction(adminKey?: string) {
     const users = authUsers.map((u: any) => {
       const p: any = profileMap.get(u.id)
       const tier = p?.verification_tier || 'unverified'
-      const status = p?.verification_status || (tier === 'verified' || tier === 'id_verified' ? 'approved' : 'pending')
+      const status = p?.verification_status || (tier === 'verified' || tier === 'id_verified' ? 'verified' : 'unverified')
       const name = p?.full_name || u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split('@')[0] || 'Resident Member'
 
       return {
@@ -89,6 +89,7 @@ export async function getAdminDashboardDataAction(adminKey?: string) {
     const recordsEnriched = (verifications || []).map((v: any) => {
       const u = authUsers.find((au: any) => au.id === v.user_id)
       const p: any = profileMap.get(v.user_id)
+      const recStatus = v.status || v.verification_status || (p?.verification_tier === 'verified' ? 'approved' : 'pending')
       return {
         id: v.id,
         userId: v.user_id,
@@ -96,9 +97,9 @@ export async function getAdminDashboardDataAction(adminKey?: string) {
         userEmail: u?.email || 'N/A',
         city: p?.city || 'Pune',
         verification_type: v.verification_type || 'Email Identity Anchor',
-        verification_status: v.verification_status || 'pending',
-        verified_data: v.verified_data || {},
-        submitted_at: v.submitted_at || v.created_at || new Date().toISOString(),
+        verification_status: recStatus,
+        document_url: v.document_path,
+        submitted_at: v.created_at || v.submitted_at || new Date().toISOString(),
       }
     })
 
@@ -228,30 +229,39 @@ export async function adminSetUserVerificationTierAction(
   const admin = createAdminClient()
   const db: any = admin
 
-  const status = tier === 'verified' ? 'approved' : tier === 'suspended' ? 'rejected' : 'pending'
+  // IMPORTANT: The profiles_verification_status_check constraint requires:
+  // verification_status IN ('unverified', 'pending', 'verified')
+  const profileStatus: 'unverified' | 'pending' | 'verified' =
+    tier === 'verified' ? 'verified' : tier === 'suspended' ? 'unverified' : 'pending'
+  const recordStatus: 'approved' | 'rejected' | 'pending' =
+    tier === 'verified' ? 'approved' : tier === 'suspended' ? 'rejected' : 'pending'
 
-  // Update profiles table
+  // Update profiles table adhering strictly to allowed constraint values
   const { error } = await db
     .from('profiles')
     .update({
       verification_tier: tier,
-      verification_status: status,
+      verification_status: profileStatus,
       updated_at: new Date().toISOString(),
     })
     .eq('id', userId)
 
   if (error) {
+    console.error('Profile verification update error:', error)
     return { success: false, message: error.message }
   }
 
-  // Update or insert verification record audit trail
-  await db.from('verification_records').upsert({
-    user_id: userId,
-    verification_type: 'email_identity',
-    verification_status: status,
-    reviewed_at: new Date().toISOString(),
-    verified_data: { admin_action: `Admin marked tier as ${tier}` },
-  })
+  // Audit trail insertion in verification_records
+  try {
+    await db.from('verification_records').insert({
+      user_id: userId,
+      verification_type: 'email_identity',
+      status: recordStatus,
+      verified_at: tier === 'verified' ? new Date().toISOString() : null,
+    })
+  } catch (recErr) {
+    console.warn('Audit record insert notice:', recErr)
+  }
 
   return { success: true, message: `Successfully updated user verification to ${tier.toUpperCase()}` }
 }

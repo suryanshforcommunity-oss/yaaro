@@ -393,7 +393,7 @@ export default function AdminModerationPage() {
                 {verifications.map((v) => {
                   const docUrl = (v.verified_data as any)?.document_url
                   const idMasked = (v.verified_data as any)?.id_masked
-                  const isApproved = v.verification_status === 'approved'
+                  const isApproved = v.verification_status === 'approved' || v.verification_status === 'verified'
 
                   return (
                     <div
