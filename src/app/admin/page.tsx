@@ -46,6 +46,7 @@ export default function AdminModerationPage() {
   const [loading, setLoading] = useState<boolean>(true)
   const [actionMsg, setActionMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
   const [searchFilter, setSearchFilter] = useState<string>('')
+  const [inFlightIds, setInFlightIds] = useState<Record<string, boolean>>({})
 
   // Terminal Security Access
   const [adminKey, setAdminKey] = useState<string>('')
@@ -108,12 +109,82 @@ export default function AdminModerationPage() {
   }
 
   const handleSetUserVerification = async (userId: string, tier: 'verified' | 'unverified' | 'suspended') => {
-    const res = await adminSetUserVerificationTierAction(userId, tier, adminKey)
-    if (res.success) {
-      setActionMsg({ text: res.message, type: 'success' })
-      refreshData()
-    } else {
-      setActionMsg({ text: res.message, type: 'error' })
+    // 1. INSTANT OPTIMISTIC UI UPDATE (0ms lag)
+    setInFlightIds((prev) => ({ ...prev, [userId]: true }))
+
+    const prevUsers = [...users]
+    const prevVerifications = [...verifications]
+    const prevMetrics = metrics ? { ...metrics } : null
+
+    // Update users list immediately in state
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.id === userId
+          ? {
+              ...u,
+              verification_tier: tier,
+              verification_status: tier === 'verified' ? 'verified' : 'unverified',
+            }
+          : u
+      )
+    )
+
+    // Update verification queue immediately in state
+    setVerifications((prev) =>
+      prev.map((v) =>
+        v.userId === userId
+          ? {
+              ...v,
+              verification_status: tier === 'verified' ? 'approved' : tier === 'suspended' ? 'rejected' : 'pending',
+            }
+          : v
+      )
+    )
+
+    // Update header metrics immediately
+    if (metrics) {
+      const isNowVerified = tier === 'verified'
+      setMetrics((m) =>
+        m
+          ? {
+              ...m,
+              verifiedUsers: isNowVerified ? m.verifiedUsers + 1 : Math.max(0, m.verifiedUsers - 1),
+              pendingVerifications: isNowVerified
+                ? Math.max(0, m.pendingVerifications - 1)
+                : m.pendingVerifications,
+            }
+          : null
+      )
+    }
+
+    setActionMsg({
+      text: `⚡ Updating ${tier.toUpperCase()}... Dispatching realtime alert pop-up to resident.`,
+      type: 'success',
+    })
+
+    // 2. DISPATCH BACKGROUND SERVER PERSISTENCE
+    try {
+      const res = await adminSetUserVerificationTierAction(userId, tier, adminKey)
+      if (res.success) {
+        setActionMsg({ text: `✓ ${res.message} (Realtime notification popped up on user's screen!)`, type: 'success' })
+      } else {
+        // Rollback on error
+        setUsers(prevUsers)
+        setVerifications(prevVerifications)
+        setMetrics(prevMetrics)
+        setActionMsg({ text: res.message || 'Failed to update verification status', type: 'error' })
+      }
+    } catch (err: any) {
+      setUsers(prevUsers)
+      setVerifications(prevVerifications)
+      setMetrics(prevMetrics)
+      setActionMsg({ text: err.message || 'Network error updating verification', type: 'error' })
+    } finally {
+      setInFlightIds((prev) => {
+        const copy = { ...prev }
+        delete copy[userId]
+        return copy
+      })
     }
   }
 
@@ -454,23 +525,40 @@ export default function AdminModerationPage() {
                         {!isApproved && (
                           <button
                             onClick={() => handleSetUserVerification(v.userId, 'verified')}
-                            className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-cream font-bold uppercase transition-colors shadow-[2px_2px_0px_#263F32]"
+                            disabled={inFlightIds[v.userId]}
+                            className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-cream font-bold uppercase transition-colors shadow-[2px_2px_0px_#263F32] flex items-center gap-1.5"
                           >
-                            Approve &amp; Verify User ✓
+                            {inFlightIds[v.userId] ? (
+                              <>
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                <span>Updating...</span>
+                              </>
+                            ) : (
+                              <span>Approve &amp; Verify User ✓</span>
+                            )}
                           </button>
                         )}
                         {isApproved && (
                           <button
                             onClick={() => handleSetUserVerification(v.userId, 'unverified')}
-                            className="px-3 py-1.5 border border-deepgreen bg-cream hover:bg-butter text-deepgreen font-bold uppercase"
+                            disabled={inFlightIds[v.userId]}
+                            className="px-3 py-1.5 border border-deepgreen bg-cream hover:bg-butter disabled:opacity-50 text-deepgreen font-bold uppercase flex items-center gap-1.5"
                           >
-                            Revoke
+                            {inFlightIds[v.userId] ? (
+                              <>
+                                <RefreshCw className="w-3 h-3 animate-spin" />
+                                <span>Updating...</span>
+                              </>
+                            ) : (
+                              <span>Revoke</span>
+                            )}
                           </button>
                         )}
                         {v.verification_status !== 'rejected' && (
                           <button
                             onClick={() => setRejectionModal({ id: v.userId, target: 'verification', title: `Reject Verification for ${v.userName}` })}
-                            className="px-3 py-1.5 bg-tomato hover:bg-tomato-dark text-cream font-bold uppercase transition-colors shadow-[2px_2px_0px_#263F32]"
+                            disabled={inFlightIds[v.userId]}
+                            className="px-3 py-1.5 bg-tomato hover:bg-tomato-dark disabled:opacity-50 text-cream font-bold uppercase transition-colors shadow-[2px_2px_0px_#263F32]"
                           >
                             Reject ✕
                           </button>
@@ -712,30 +800,48 @@ export default function AdminModerationPage() {
                         {!isVerified && !isSuspended && (
                           <button
                             onClick={() => handleSetUserVerification(u.id, 'verified')}
-                            className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-cream font-bold uppercase transition-colors shadow-[2px_2px_0px_#263F32]"
+                            disabled={inFlightIds[u.id]}
+                            className="px-3.5 py-1.5 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-cream font-bold uppercase transition-colors shadow-[2px_2px_0px_#263F32] flex items-center gap-1.5"
                           >
-                            Verify User ✓
+                            {inFlightIds[u.id] ? (
+                              <>
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                <span>Updating...</span>
+                              </>
+                            ) : (
+                              <span>Verify User ✓</span>
+                            )}
                           </button>
                         )}
                         {isVerified && (
                           <button
                             onClick={() => handleSetUserVerification(u.id, 'unverified')}
-                            className="px-2.5 py-1.5 border border-deepgreen bg-cream text-deepgreen hover:bg-butter font-bold uppercase"
+                            disabled={inFlightIds[u.id]}
+                            className="px-2.5 py-1.5 border border-deepgreen bg-cream text-deepgreen hover:bg-butter disabled:opacity-50 font-bold uppercase flex items-center gap-1.5"
                           >
-                            Revoke Verification
+                            {inFlightIds[u.id] ? (
+                              <>
+                                <RefreshCw className="w-3 h-3 animate-spin" />
+                                <span>Updating...</span>
+                              </>
+                            ) : (
+                              <span>Revoke Verification</span>
+                            )}
                           </button>
                         )}
                         {!isSuspended ? (
                           <button
                             onClick={() => setRejectionModal({ id: u.id, target: 'ban', title: `Suspend ${u.full_name}` })}
-                            className="px-2.5 py-1.5 border border-tomato text-tomato bg-cream hover:bg-tomato hover:text-cream font-bold uppercase transition-colors"
+                            disabled={inFlightIds[u.id]}
+                            className="px-2.5 py-1.5 border border-tomato text-tomato bg-cream hover:bg-tomato hover:text-cream disabled:opacity-50 font-bold uppercase transition-colors"
                           >
                             Suspend User
                           </button>
                         ) : (
                           <button
                             onClick={() => handleSetUserVerification(u.id, 'unverified')}
-                            className="px-2.5 py-1.5 bg-deepgreen text-cream font-bold uppercase"
+                            disabled={inFlightIds[u.id]}
+                            className="px-2.5 py-1.5 bg-deepgreen text-cream font-bold uppercase disabled:opacity-50"
                           >
                             Reactivate User
                           </button>

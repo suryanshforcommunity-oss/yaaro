@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { reviewVerificationRecord } from '@/lib/verification'
 import { resolveReportAction, banUserAction, moderateListingAction } from '@/lib/safety'
+import { createNotification } from '@/lib/notifications'
 
 export interface AdminMetrics {
   totalUsers: number
@@ -261,6 +262,37 @@ export async function adminSetUserVerificationTierAction(
     })
   } catch (recErr) {
     console.warn('Audit record insert notice:', recErr)
+  }
+
+  // Realtime notification dispatch to user
+  try {
+    if (tier === 'verified') {
+      await createNotification({
+        userId,
+        type: 'verification_approved',
+        title: '🎉 Application Verified!',
+        body: 'Congratulations! Your YAARO Identity & Resident Dossier has been officially verified by Admin. Your verified badge is now active.',
+        actionUrl: '/dashboard',
+      })
+    } else if (tier === 'unverified') {
+      await createNotification({
+        userId,
+        type: 'verification_revoked',
+        title: '⚠️ Verification Status Revoked',
+        body: 'Your verification status has been reset by Admin compliance. Please review your living dossier.',
+        actionUrl: '/verify',
+      })
+    } else if (tier === 'suspended') {
+      await createNotification({
+        userId,
+        type: 'account_suspended',
+        title: '🚫 Account Suspended',
+        body: 'Your resident account has been suspended by community compliance.',
+        actionUrl: '/profile',
+      })
+    }
+  } catch (notifErr) {
+    console.warn('Realtime alert dispatch notice:', notifErr)
   }
 
   return { success: true, message: `Successfully updated user verification to ${tier.toUpperCase()}` }

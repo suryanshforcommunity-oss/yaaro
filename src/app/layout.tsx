@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { PWARegistration } from '@/components/PWARegistration'
+import RealtimeNotificationToast from '@/components/RealtimeNotificationToast'
 
 export const metadata: Metadata = {
   title: 'YAARO — Find your people. Find your place.',
@@ -48,6 +49,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-cream text-deepgreen antialiased selection:bg-tomato selection:text-white font-serif">
         <PWARegistration />
+        <RealtimeNotificationToast />
         {children}
       </body>
     </html>

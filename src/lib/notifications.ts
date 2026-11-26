@@ -20,6 +20,9 @@ export type NotificationType =
   | 'member_joined_household'
   | 'new_household_expense'
   | 'household_settlement'
+  | 'verification_approved'
+  | 'verification_revoked'
+  | 'account_suspended'
 
 export interface AppNotification {
   id: string
