@@ -387,7 +387,7 @@ export default function AdminModerationPage() {
           </div>
           <div className="p-3.5 bg-deepgreen text-cream border-2 border-deepgreen shadow-[3px_3px_0px_#E95D43]">
             <span className="text-[10px] uppercase tracking-wider text-butter block font-bold">CLUB MRR</span>
-            <span className="text-2xl font-black font-serif text-butter mt-1 block">₹{metrics?.estimatedMRR.toLocaleString('en-IN') || 0}</span>
+            <span className="text-2xl font-black font-serif text-butter mt-1 block">₹{(metrics?.estimatedMRR ?? 0).toLocaleString('en-IN')}</span>
           </div>
         </div>
 
@@ -502,7 +502,7 @@ export default function AdminModerationPage() {
                           </span>
                           {idMasked && <span>(Ref: {idMasked})</span>}
                           <span>•</span>
-                          <span>Requested: {new Date(v.submitted_at).toLocaleDateString()}</span>
+                          <span>Requested: {v.submitted_at ? new Date(v.submitted_at).toLocaleDateString() : 'Recent'}</span>
                         </div>
 
                         {docUrl && (
@@ -687,8 +687,8 @@ export default function AdminModerationPage() {
                       </span>
                     </div>
                     <div className="font-mono text-xs text-deepgreen/70">
-                      <span>City: {l.city}</span> • <span>Rent: ₹{Number(l.rent_monthly).toLocaleString('en-IN')}/mo</span> •{' '}
-                      <span>Deposit: ₹{Number(l.security_deposit).toLocaleString('en-IN')}</span>
+                      <span>City: {l.city || 'N/A'}</span> • <span>Rent: ₹{Number(l.rent_monthly || 0).toLocaleString('en-IN')}/mo</span> •{' '}
+                      <span>Deposit: ₹{Number(l.security_deposit || 0).toLocaleString('en-IN')}</span>
                     </div>
                   </div>
 

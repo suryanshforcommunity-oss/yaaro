@@ -18,94 +18,111 @@ export default function RealtimeNotificationToast() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   useEffect(() => {
-    const supabase = createClient()
+    let notifChannel: any = null
+    let isMounted = true
 
     async function setupListener() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      try {
+        const supabase = createClient()
+        if (!supabase) return
 
-      // Don't show resident alert popups to the admin account itself
-      if (user.email?.toLowerCase() === 'admin@yaaro.live') return
+        const { data, error } = await supabase.auth.getUser()
+        if (error || !data?.user || !isMounted) return
+        const user = data.user
 
-      setCurrentUserId(user.id)
+        // Don't show resident alert popups to the admin account itself
+        if (user.email?.toLowerCase() === 'admin@yaaro.live') return
 
-      // 1. Listen for new notifications specifically targeting this user
-      const notifChannel = supabase
-        .channel(`realtime_alerts_${user.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'notifications',
-            filter: `user_id=eq.${user.id}`,
-          },
-          (payload: any) => {
-            const notif = payload.new
-            if (!notif) return
+        setCurrentUserId(user.id)
 
-            let alertType: LiveAlert['type'] = 'general'
-            if (notif.type === 'verification_approved') alertType = 'verified'
-            else if (notif.type === 'verification_revoked') alertType = 'revoked'
-            else if (notif.type === 'account_suspended') alertType = 'suspended'
+        // 1. Listen for new notifications specifically targeting this user
+        notifChannel = supabase
+          .channel(`realtime_alerts_${user.id}`)
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'notifications',
+              filter: `user_id=eq.${user.id}`,
+            },
+            (payload: any) => {
+              if (!isMounted) return
+              const notif = payload?.new
+              if (!notif) return
 
-            setActiveAlert({
-              id: notif.id || String(Date.now()),
-              type: alertType,
-              title: notif.title || 'Notification Update',
-              body: notif.body || 'Your account status was updated by Admin.',
-              actionUrl: notif.action_url || '/dashboard',
-            })
-          }
-        )
-        // 2. Also listen for direct profile updates on verification_tier
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'profiles',
-            filter: `id=eq.${user.id}`,
-          },
-          (payload: any) => {
-            const updated = payload.new
-            if (!updated) return
+              let alertType: LiveAlert['type'] = 'general'
+              if (notif.type === 'verification_approved') alertType = 'verified'
+              else if (notif.type === 'verification_revoked') alertType = 'revoked'
+              else if (notif.type === 'account_suspended') alertType = 'suspended'
 
-            if (updated.verification_tier === 'verified' || updated.verification_status === 'verified') {
               setActiveAlert({
-                id: `prof_ver_${Date.now()}`,
-                type: 'verified',
-                title: '🎉 APPLICATION VERIFIED!',
-                body: 'Congratulations! Your YAARO Identity & Resident Dossier has been officially verified by Admin. Your verified badge is now active across all searches and flatmate chats.',
-                actionUrl: '/dashboard',
-              })
-            } else if (updated.verification_tier === 'unverified') {
-              setActiveAlert({
-                id: `prof_unver_${Date.now()}`,
-                type: 'revoked',
-                title: '⚠️ VERIFICATION STATUS REVOKED',
-                body: 'Your verification badge has been reset by Admin compliance. Please review your profile.',
-                actionUrl: '/verify',
-              })
-            } else if (updated.verification_tier === 'suspended') {
-              setActiveAlert({
-                id: `prof_susp_${Date.now()}`,
-                type: 'suspended',
-                title: '🚫 ACCOUNT SUSPENDED',
-                body: 'Your account has been suspended by community compliance moderators.',
-                actionUrl: '/profile',
+                id: notif.id || String(Date.now()),
+                type: alertType,
+                title: notif.title || 'Notification Update',
+                body: notif.body || 'Your account status was updated by Admin.',
+                actionUrl: notif.action_url || '/dashboard',
               })
             }
-          }
-        )
-        .subscribe()
+          )
+          // 2. Also listen for direct profile updates on verification_tier
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'profiles',
+              filter: `id=eq.${user.id}`,
+            },
+            (payload: any) => {
+              if (!isMounted) return
+              const updated = payload?.new
+              if (!updated) return
 
-      return () => {
-        supabase.removeChannel(notifChannel)
+              if (updated.verification_tier === 'verified' || updated.verification_status === 'verified') {
+                setActiveAlert({
+                  id: `prof_ver_${Date.now()}`,
+                  type: 'verified',
+                  title: '🎉 APPLICATION VERIFIED!',
+                  body: 'Congratulations! Your YAARO Identity & Resident Dossier has been officially verified by Admin. Your verified badge is now active across all searches and flatmate chats.',
+                  actionUrl: '/dashboard',
+                })
+              } else if (updated.verification_tier === 'unverified') {
+                setActiveAlert({
+                  id: `prof_unver_${Date.now()}`,
+                  type: 'revoked',
+                  title: '⚠️ VERIFICATION STATUS REVOKED',
+                  body: 'Your verification badge has been reset by Admin compliance. Please review your profile.',
+                  actionUrl: '/verify',
+                })
+              } else if (updated.verification_tier === 'suspended') {
+                setActiveAlert({
+                  id: `prof_susp_${Date.now()}`,
+                  type: 'suspended',
+                  title: '🚫 ACCOUNT SUSPENDED',
+                  body: 'Your account has been suspended by community compliance moderators.',
+                  actionUrl: '/profile',
+                })
+              }
+            }
+          )
+          .subscribe()
+      } catch (err) {
+        console.warn('Realtime listener error:', err)
       }
     }
 
     setupListener()
+
+    return () => {
+      isMounted = false
+      if (notifChannel) {
+        try {
+          const supabase = createClient()
+          supabase.removeChannel(notifChannel)
+        } catch (_) {}
+      }
+    }
   }, [])
 
   if (!activeAlert) return null
